@@ -1,0 +1,35 @@
+# Archivos de configuración de usuarios y del sistema
+*.DS_Store
+*.Rhistory
+.CFUserTextEncoding
+.anydesk/
+.config/
+.gitconfig
+.idlerc/
+.ipython/
+.jupyter/
+.keras/
+.lesshst
+.local/
+.matplotlib/
+.npm/
+.python_history
+.ssh/
+.viminfo
+.vscode/
+.zprofile
+.zsh_history
+.zsh_sessions/
+Applications/
+Documents/
+Downloads/
+Library/
+Movies/
+Music/
+Pictures/
+Public/
+# Ignorar carpetas de Google Drive
+*aamdezhdez@gmail.com - Google Drive*
+*angel.mendez@cimat.mx - Google Drive*
+*angel1999.aamh@gmail.com - Google Drive*
+
