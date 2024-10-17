@@ -20,6 +20,7 @@
 .zprofile
 .zsh_history
 .zsh_sessions/
+__pycache__/functions.cpython-312.pyc
 Applications/
 Documents/
 Downloads/
