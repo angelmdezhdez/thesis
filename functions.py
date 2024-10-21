@@ -17,6 +17,13 @@ def leer_matriz(nombre_archivo):
             matriz.append(fila)
     return matriz
 
+def count_trips_mibici(data_user):
+    viajes_user = data_user.groupby([data_user[['Origen_Id', 'Destino_Id']].min(axis=1), data_user[['Origen_Id', 'Destino_Id']].max(axis=1)]).size().reset_index(name='counts')
+    viajes_user.columns = ['Est_A', 'Est_B', 'counts']
+    total = viajes_user['counts'].sum()
+    viajes_user['prob'] = viajes_user['counts']/total
+    return viajes_user
+
 # Función para encontrar la estación en la matriz con posiciones físicas 
 def encontrar_estacion(est, matriz):
     for i in range(len(matriz)):
