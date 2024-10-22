@@ -6,6 +6,10 @@ import requests
 import warnings
 warnings.filterwarnings("ignore")
 
+def send_message(message):
+    requests.post("https://ntfy.sh/Compu_CIMAT",
+        data=message.encode(encoding='utf-8'))
+
 # Función para leer matrices
 def leer_matriz(nombre_archivo):
     matriz = []
