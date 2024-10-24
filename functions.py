@@ -52,9 +52,6 @@ def user_flow(u, d, esta, estaciones, users_counts, name_dir, threshold=5, zoom 
     genre = d['Genero'].iloc[0]
     year = d['Año_de_nacimiento'].iloc[0]
     plt.figure(figsize=(12, 12))
-    for i in range(len(esta)):
-        lat, lon = encontrar_estacion(esta[i], estaciones)
-        plt.scatter(lon, lat, color='black')
 
     # Agrupar los datos por Origen_Id y Destino_Id y contar la cantidad de viajes
     viajes_por_estaciones = d.groupby([d[['Origen_Id', 'Destino_Id']].min(axis=1), d[['Origen_Id', 'Destino_Id']].max(axis=1)]).size().reset_index(name='counts')
@@ -80,6 +77,7 @@ def user_flow(u, d, esta, estaciones, users_counts, name_dir, threshold=5, zoom 
     if num_viajes_considerados > 0:
         colors = generar_colores(num_viajes_considerados)
         viajes_considerados = viajes_considerados.reset_index(drop=True)
+        esta_graficadas = set()
     
         # Dibujar las trayectorias entre estaciones
         for i, viaje in viajes_considerados.iterrows():
@@ -100,10 +98,16 @@ def user_flow(u, d, esta, estaciones, users_counts, name_dir, threshold=5, zoom 
             # Dibujar la línea que conecta las estaciones
             if est_A == est_B:
                 # Dibujar un círculo alrededor de la estación
-                plt.scatter(lon_A, lat_A, color=colors[i], s=100, label=f'Probabilidad: {viaje["probabilidad"]:.4f}')
+                # size = min(max(viaje['probabilidad'] * 100, plt.rcParams['lines.markersize'] ** 2), 300)
+                plt.scatter(lon_A, lat_A, color=colors[i], marker='*', s=100, label=f'Probabilidad: {viaje["probabilidad"]:.6f}')
+                esta_graficadas.add(est_A)
             else:
                 # Dibujar la línea que conecta las estaciones
-                plt.plot([lon_A, lon_B], [lat_A, lat_B], color=colors[i], linewidth=linewidth, label=f'Probabilidad: {viaje["probabilidad"]:.4f}')
+                plt.plot([lon_A, lon_B], [lat_A, lat_B], color=colors[i], linewidth=linewidth, label=f'Probabilidad: {viaje["probabilidad"]:.6f}')
+        for i in range(len(esta)):
+            if esta[i] not in esta_graficadas:
+                lat, lon = encontrar_estacion(esta[i], estaciones)
+                plt.scatter(lon, lat, color='black')
     else:
         print(f"No hay viajes considerados para el usuario {u} con el umbral de {threshold}")
 
