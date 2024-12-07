@@ -6,8 +6,8 @@ import requests
 import warnings
 warnings.filterwarnings("ignore")
 
-def send_message(message):
-    requests.post("https://ntfy.sh/Compu_CIMAT",
+def send_message(message, channel):
+    requests.post(f"https://ntfy.sh/{channel}",
         data=message.encode(encoding='utf-8'))
 
 # Función para leer matrices
