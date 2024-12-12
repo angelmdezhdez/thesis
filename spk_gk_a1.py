@@ -5,6 +5,7 @@ import pandas as pd
 import os
 import sys
 import time
+import gc
 sys.stdout.flush()
 
 # Floyd-Warshall algorithm
@@ -19,7 +20,8 @@ def floyd_warshall(AdjMatrix):
     return cost
 
 # shortest path kernel
-def shortest_path_kernel(S1, S2, k_walk):
+
+def shortest_path_kernel1(S1, S2, k_walk):
     # Obtener índices donde las entradas son finitas
     indices_S1 = np.transpose(np.triu_indices_from(S1))
     indices_S2 = np.transpose(np.triu_indices_from(S2))
@@ -36,6 +38,26 @@ def shortest_path_kernel(S1, S2, k_walk):
     K = np.sum([k_walk(d1, d2) for d1 in S1_finite for d2 in S2_finite])
     
     return K
+
+def shortest_path_kernel2(S1, S2, k_walk):
+    K = 0
+    n = len(S1)
+    m = len(S2)
+    for i in range(n):
+        for j in range(i, n):
+            for ii in range(m):
+                for jj in range(ii, m):
+                    if np.isfinite(S1[i, j]) and np.isfinite(S2[ii, jj]):
+                        K += k_walk(S1[i, j], S2[ii, jj])
+    return K
+
+def shortest_path_kernel(S1, S2, k_walk):
+    try:
+        return shortest_path_kernel1(S1, S2, k_walk)
+    except Exception as e:
+        print(f"Error: {e}, trying another approach")
+        sys.stdout.flush()
+        return shortest_path_kernel2(S1, S2, k_walk)
 
 # kernel walk functions
 def dirac_kernel(a, b):
@@ -109,7 +131,7 @@ def gram_matrix(data, k_function, normalized = False, save = False, directory = 
         np.save(directory + 'gram_matrix.npy', gram)
     return gram
 
-dir = "/home/est_posgrado_angel.mendez/spk/p1"
+dir = "/home/est_posgrado_angel.mendez/spk/p1/"
 
 s = 44
 
@@ -117,7 +139,7 @@ s = 44
 data_2019 = pd.read_csv('/home/est_posgrado_angel.mendez/spk/2019.csv')
 month = "01"
 
-dates = [f"2019-{month}-{str(i).zfill(2)}" for i in range(1, 32)]
+dates = [f"2019-{month}-{str(i).zfill(2)}" for i in range(1, 16)]
 
 data = []
 
@@ -127,6 +149,8 @@ for date in dates:
     current_matrix = compute_matrix(current_counter, self_loops=True)
     current_s = floyd_warshall(current_matrix)
     data.append(current_s)
+    del current_data, current_counter, current_matrix, current_s
+    gc.collect()
 
 # functions to compute the kernel
 
@@ -142,6 +166,8 @@ end = time.time()
 print(f"Time elapsed with the dirac kernel: {end - start}")
 sys.stdout.flush()
 
+gc.collect()
+
 # to compute the gram matrix with the second kernel
 print("Computing the gram matrix with the gaussian kernel")
 sys.stdout.flush()
@@ -150,3 +176,5 @@ gram_matrix(data, k_fnc2, normalized = True, save = True, directory = f'{dir}gra
 end = time.time()
 print(f"Time elapsed with the gaussian kernel: {end - start}")
 sys.stdout.flush()
+
+gc.collect()
