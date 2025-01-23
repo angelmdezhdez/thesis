@@ -16,6 +16,7 @@ def floyd_warshall(AdjMatrix):
     n = len(AdjMatrix)
     cost = np.copy(AdjMatrix)
     cost[cost == 0] = np.inf
+    np.fill_diagonal(cost, 0)
     for k in range(n):
         for i in range(n):
             for j in range(n):
