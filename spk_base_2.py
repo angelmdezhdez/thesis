@@ -6,7 +6,6 @@ import gc
 import sys
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 sys.stdout.flush()
 
 ##############################################################################################################
@@ -69,11 +68,10 @@ def index_gen(n):
 def task1(args):
     index, S1, S2, V1, V2, fnc1, fnc2, est = args
     i, j = index
-    s = 0
 
     # Verificar si el valor en S1 es finito
     if not np.isfinite(S1[i, j]):
-        return 0
+        return [], [], []
 
     # Precomputar las estaciones iniciales y finales de V2
     init2_all = np.array([encontrar_estacion(v, est) for v in V2])
@@ -100,8 +98,8 @@ def task1(args):
     fnc2_end_values = np.array([fnc2(end1, end2) for end2 in valid_end2])
 
     # Sumar el producto de las tres funciones
-    s = np.sum(fnc1_values * fnc2_init_values * fnc2_end_values)
-    return s
+    #s = np.sum(fnc1_values * fnc2_init_values * fnc2_end_values)
+    return fnc1_values, fnc2_init_values, fnc2_end_values
 
 
 def task2(args):
@@ -111,16 +109,22 @@ def task2(args):
     n = len(S2)
     init1 = encontrar_estacion(V1[i], est)
     end1 = encontrar_estacion(V1[j], est)
+    k1 = []
+    k2 = []
+    k3 = []
     if np.isfinite(S1[i, j]):
         for k in range(n):
             for l in range(n):
                 if np.isfinite(S2[k, l]):
                     init2 = encontrar_estacion(V2[k], est)
                     end2 = encontrar_estacion(V2[l], est)
-                    s += fnc1(S1[i, j], S2[k, l])*fnc2(init1, init2)*fnc2(end1, end2)
-        return s
+                    k1.append(fnc1(S1[i, j], S2[k, l]))
+                    k2.append(fnc2(init1, init2))
+                    k3.append(fnc2(end1, end2))
+                    #s += fnc1(S1[i, j], S2[k, l])*fnc2(init1, init2)*fnc2(end1, end2)
+        return k1, k2, k3
     else:
-        return 0
+        return [], [], []
     
 def task(args):
     try:
@@ -128,7 +132,7 @@ def task(args):
     except Exception as e:
         print('Error with args:', args[0], 'Error:', e)
         print('Trying task2...')
-        return task2(args)
+        return task2(args)  
 
 
 # shortest path kernel parallel implementation
@@ -140,179 +144,22 @@ def sp_kernel(S1, S2, V1, V2, ker_func1 = None, ker_func2 = None, est = None):
     try:
         tasks = [(index, S1, S2, V1, V2, ker_func1, ker_func2, est) for index in index_gen(n)]
         results = pool.imap(task, tasks, chunksize = 100)
-        k = sum(results)
+        #k = sum(results)
     except Exception as e:
         raise e
     finally:
         pool.close()
         pool.join()
-    return k
-
-##############################################################################################################
-
-# gram matrix computation
-def gram_matrix(data1, data2, k_function, normalized=False, save=False, directory=None):
-    """This function computes the Gram matrix of the data using the kernel function k_function.
-    
-    Parameters:
-    data: list of matrices
-    k_function: kernel function which takes two matrices as input
-    normalized: boolean, if True the Gram matrix is normalized
-    save: boolean, if True the Gram matrix is saved in the specified directory
-    directory: string, directory where the Gram matrix is saved
-    
-    Returns:
-    gram: Gram matrix of the data
-    """
-    n = len(data1)
-    gram = np.zeros((n, n))
-
-    # Compute only the upper triangle of the Gram matrix
-    for i in range(n):
-        for j in range(i, n):
-            gram[i, j] = k_function(data1[i], data1[j], data2[i], data2[j])
-            if i != j:
-                gram[j, i] = gram[i, j]
-
-    # Normalize the Gram matrix if required
-    if normalized:
-        diag = np.sqrt(np.diag(gram))
-        gram = gram / np.outer(diag, diag)
-
-    # Save the Gram matrix to a file if required
-    if save:
-        if directory is None:
-            raise ValueError("Directory must be specified if save is True.")
-        os.makedirs(directory, exist_ok=True)
-        np.save(os.path.join(directory, 'gram_matrix.npy'), gram)
-
-    return gram
-
-
-def gram_matrix_time(data1, data2, k_function, normalized=False, save=False, directory=None):
-    """This function computes the Gram matrix of the data using the kernel function k_function.
-    
-    Parameters:
-    data: list of matrices
-    k_function: kernel function which takes two matrices as input
-    normalized: boolean, if True the Gram matrix is normalized
-    save: boolean, if True the Gram matrix is saved in the specified directory
-    directory: string, directory where the Gram matrix is saved
-    
-    Returns:
-    gram: Gram matrix of the data
-    """
-    n = len(data1)
-    gram = np.zeros((n, n))
-    total_calculations = n * (n + 1) // 2  
-    start_time = time.time()
-    calculations_done = 0
-
-    # Compute only the upper triangle of the Gram matrix
-    for i in range(n):
-        for j in range(i, n):
-            gram[i, j] = k_function(data1[i], data1[j], data2[i], data2[j])
-            if i != j:
-                gram[j, i] = gram[i, j]
-            # Update progress
-            calculations_done += 1
-            elapsed_time = time.time() - start_time
-            remaining_time = (elapsed_time / calculations_done) * (total_calculations - calculations_done)
-            print(f"Computing ({i}, {j}) entry - Estimated remaining time: {remaining_time:.2f} seconds", end="\r")
-
-    # Normalize the Gram matrix if required
-    if normalized:
-        diag = np.sqrt(np.diag(gram))
-        gram = gram / np.outer(diag, diag)
-
-    # Save the Gram matrix to a file if required
-    if save:
-        if directory is None:
-            raise ValueError("Directory must be specified if save is True.")
-        os.makedirs(directory, exist_ok=True)
-        np.save(os.path.join(directory, 'gram_matrix.npy'), gram)
-
-    print("\nCompleted.") 
-    return gram
-
-
-def gram_matrix_generalized(data1, data2, k_function, save=False, directory=None):
-    """This function computes the Gram matrix of the data using the kernel function k_function.
-    
-    Parameters:
-    data1,2: list of matrices 
-    k_function: kernel function which takes two matrices as input
-    save: boolean, if True the Gram matrix is saved in the specified directory
-    directory: string, directory where the Gram matrix is saved
-    
-    Returns:
-    gram: Gram matrix of the data
-    """
-    n = len(data1)
-    m = len(data2)
-    if n != m:
-        raise ValueError("Both data sets must have the same length.")
-    gram = np.zeros((n, m))
-
-    # Compute only the upper triangle of the Gram matrix
-    for i in range(n):
-        for j in range(i, m):
-            gram[i, j] = k_function(data1[i], data2[j])
-            if i != j:
-                gram[j, i] = gram[i, j]
-
-    # Save the Gram matrix to a file if required
-    if save:
-        if directory is None:
-            raise ValueError("Directory must be specified if save is True.")
-        os.makedirs(directory, exist_ok=True)
-        np.save(os.path.join(directory, 'gram_matrix.npy'), gram)
-
-    return gram
-
-def gram_matrix_time_generalized(data1, data2, k_function, save=False, directory=None):
-    """This function computes the Gram matrix of the data using the kernel function k_function.
-    
-    Parameters:
-    data: list of matrices
-    k_function: kernel function which takes two matrices as input
-    normalized: boolean, if True the Gram matrix is normalized
-    save: boolean, if True the Gram matrix is saved in the specified directory
-    directory: string, directory where the Gram matrix is saved
-    
-    Returns:
-    gram: Gram matrix of the data
-    """
-    n = len(data1)
-    m = len(data2)
-    if n != m:
-        raise ValueError("Both data sets must have the same length.")
-    gram = np.zeros((n, n))
-    total_calculations = n * (n + 1) // 2  
-    start_time = time.time()
-    calculations_done = 0
-
-    # Compute only the upper triangle of the Gram matrix
-    for i in range(n):
-        for j in range(i, n):
-            gram[i, j] = k_function(data1[i], data2[j])
-            if i != j:
-                gram[j, i] = gram[i, j]
-            # Update progress
-            calculations_done += 1
-            elapsed_time = time.time() - start_time
-            remaining_time = (elapsed_time / calculations_done) * (total_calculations - calculations_done)
-            print(f"Computing ({i}, {j}) entry - Estimated remaining time: {remaining_time:.2f} seconds", end="\r")
-
-    # Save the Gram matrix to a file if required
-    if save:
-        if directory is None:
-            raise ValueError("Directory must be specified if save is True.")
-        os.makedirs(directory, exist_ok=True)
-        np.save(os.path.join(directory, 'gram_matrix.npy'), gram)
-
-    print("\nCompleted.") 
-    return gram
+    #return k
+    k1_list = []
+    k2_list = []
+    k3_list = []
+    for result in results:
+        k1, k2, k3 = result
+        k1_list.extend(k1)
+        k2_list.extend(k2)
+        k3_list.extend(k3)
+    return k1_list, k2_list, k3_list
 
 
 ##############################################################################################################
@@ -349,25 +196,6 @@ def count_trips_mibici(data_user, threshold = 5, complement = False):
 ##############################################################################################################
 
 # compute the matrix of trips between stations
-def compute_matrix(counter_user, normalized = False, self_loops = False):
-    if not self_loops:
-        counter_user = counter_user[counter_user['Est_A'] != counter_user['Est_B']]
-    vertex = list(set(counter_user['Est_A'].unique().tolist() + counter_user['Est_B'].unique().tolist()))
-    matrix = np.zeros((len(vertex), len(vertex)))
-    for i in range(len(counter_user)):
-        current_trip = counter_user.iloc[i]
-        count = current_trip["counts"]
-        estA = current_trip["Est_A"]
-        estB = current_trip["Est_B"]
-
-        matrix[vertex.index(estA)][vertex.index(estB)] = count
-        matrix[vertex.index(estB)][vertex.index(estA)] = count
-    if normalized:
-        D = np.sum(matrix, axis = 1)
-        D = np.diag(D)
-        D = np.linalg.inv(np.sqrt(D))
-        matrix = D @ matrix @ D
-    return matrix, vertex
 
 def log_prob_matrix(counter_user, normalized = False, self_loops = False):
     if not self_loops:
@@ -389,34 +217,6 @@ def log_prob_matrix(counter_user, normalized = False, self_loops = False):
         matrix = D @ matrix @ D
     return matrix, vertex
 
-def normalize_matrix(matrix):
-    diag = np.sqrt(np.diag(matrix))
-    m = matrix / np.outer(diag, diag)
-    return m
-
-##############################################################################################################
-
-def plot_heatmap(matrix, title, labels, with_values = False, save = False, directory = None):
-    plt.figure(figsize=(10, 8))
-    plt.imshow(matrix, cmap='viridis', interpolation='nearest')
-    plt.colorbar()
-    plt.title(title)
-    plt.xticks(np.arange(matrix.shape[1]), labels, rotation=90)
-    plt.yticks(np.arange(matrix.shape[0]), labels)
-    plt.xticks(np.arange(matrix.shape[1]))
-    plt.yticks(np.arange(matrix.shape[0]))
-    if with_values:
-        for i in range(matrix.shape[0]):
-            for j in range(matrix.shape[1]):
-                plt.text(j, i, f'{matrix[i, j]:.1f}', ha='center', va='center', color='white')
-    plt.tight_layout()
-    if save:
-        os.makedirs(directory, exist_ok=True)
-        plt.savefig(os.path.join(directory, title + '.pdf'), bbox_inches='tight')
-    else:
-        plt.show()
-    plt.close()
-
 ##############################################################################################################
 
 # main
@@ -431,7 +231,7 @@ if __name__ == "__main__":
 
     #dates1 = ['2019-01-01', '2019-01-02', '2019-01-03', '2019-02-03', '2019-02-04', '2019-02-05', '2019-02-06', '2019-02-07', '2019-03-16', '2019-03-17', '2019-03-18', '2019-03-19', '2019-03-20']
     #dates2 = ['2019-04-29', '2019-04-30', '2019-05-01', '2019-05-02', '2019-05-03', '2019-09-14', '2019-09-15', '2019-09-16', '2019-09-17', '2019-09-18', '2019-11-16', '2019-11-17', '2019-11-18', '2019-11-19', '2019-11-20']
-    dates = [f'2019-{j:02d}-{i:02d}' for j in range(3,4) for i in range(1, 32)]
+    dates = [f'2019-{j:02d}-{i:02d}' for j in range(3,4) for i in range(1, 16)]
     dates_true = []
 
     data1 = []
@@ -439,7 +239,7 @@ if __name__ == "__main__":
 
 
     for date in dates:
-        print('Processing date:', date)
+        print(f'Processing date: {date}', end='\r')
         sys.stdout.flush()
         current_data = main_data[main_data['Inicio_del_viaje'].str.startswith(date)]
         current_counter = count_trips_mibici(current_data)
@@ -452,17 +252,27 @@ if __name__ == "__main__":
 
 
 
-    print('Computing Gram matrix...')
+    print(f'There are {os.cpu_count()} CPUs available.')
+    sys.stdout.flush()
+    print('Computing...')
     sys.stdout.flush()
     start = time.time()
     kernel = lambda x, y, w, z: sp_kernel(x, y, w, z, gaussian_kernel1, gaussian_kernel2, estations)
-    print(f'There are {os.cpu_count()} CPUs available.')
-    sys.stdout.flush()
-    K = gram_matrix_time(data1, data2, kernel, normalized=False)
+    n = len(data1)
+
+    for i in range(n):
+        for j in range(i, n):
+            print(f'Computing ({i}, {j}) entry.', end='\r')
+            sys.stdout.flush()
+            aux = kernel(data1[i], data1[j], data2[i], data2[j])
+            np.save(f'results/K_l_{i}_{j}.npy', aux[0])
+            np.save(f'results/K_i_{i}_{j}.npy', aux[1])
+            np.save(f'results/K_e_{i}_{j}.npy', aux[2])
+    
     print('Time:', time.time() - start)
     sys.stdout.flush()
     #plot_heatmap(K1, 'Gram matrix_F', dates_true, save=True, directory=dir+'exp/plots/')
-    np.save(dir + 'K.npy', K)
-    print('Gram matrix saved.')
-    sys.stdout.flush()
+    #np.save(dir + 'K.npy', K)
+    #print('Gram matrix saved.')
+    #sys.stdout.flush()
     gc.collect()
