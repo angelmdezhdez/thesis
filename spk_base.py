@@ -14,7 +14,7 @@ sys.stdout.flush()
 # Floyd-Warshall algorithm
 def floyd_warshall(AdjMatrix):
     n = len(AdjMatrix)
-    cost = np.copy(AdjMatrix)
+    cost = np.copy(AdjMatrix).astype(float)
     cost[cost == 0] = np.inf
     np.fill_diagonal(cost, 0)
     for k in range(n):
