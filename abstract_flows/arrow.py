@@ -119,7 +119,7 @@ def draw_arrow(folium_map, lat1, lon1, lat2, lon2, color='blue', weight=3, tip=6
     arc_points = iter(zip(arc_y, arc_x))
     ant = next(arc_points)
     for p in arc_points:
-        folium.PolyLine(locations=[ant, p], color=color, weight = weight, popup=text).add_to(folium_map)
+        folium.PolyLine(locations=[ant, p], color=color, weight = weight, popup=text, opacity=0.3).add_to(folium_map)
         ant = p
 
     #rotation = math.pi/2 - end + math.pi
