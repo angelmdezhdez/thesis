@@ -21,6 +21,7 @@
 .zsh_history
 .zsh_sessions/
 __pycache__/functions.cpython-312.pyc
+abstract_flows/__pycache__
 Applications/
 Documents/
 Downloads/
