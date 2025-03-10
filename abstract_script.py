@@ -87,7 +87,7 @@ else:
                 dir_name = f'{dir}abstracted_flows/{date}/'
                 if not os.path.exists(dir_name):
                     os.makedirs(dir_name)
-                current_map.save(f'{dir_name}mibici_{date}_{int(mesh*1.8)}x{mesh}.html')
+                current_map.save(f'{dir_name}mibici_{date}_{mesh}x{mesh}.html')
             except Exception as e:
                 print(f'Error: {e}')
                 sys.stdout.flush()
