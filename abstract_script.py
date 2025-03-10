@@ -14,13 +14,14 @@ import flows
 ##################################################################################################
 # load data
 
-dir = '/home/est_posgrado_angel.mendez/af_test/'
+dir = '/home/est_posgrado_angel.mendez/af_test2/'
 
 system = 'ecobici'
 
 dates = [f'2019-01-{str(i).zfill(2)}' for i in range(1, 16)]
 
 len_mesh = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+thresholds = [1, 2, 3, 4, 5]
 
 count_data = []
 
@@ -34,7 +35,7 @@ if system == 'ecobici':
         print(f'Counting trips for {date}')
         sys.stdout.flush()
         current_data = full_data[full_data['Fecha_Retiro'].str.contains(date)]
-        current_counter = flows.count_trips_ecobici(current_data, threshold=1)
+        current_counter = flows.count_trips_ecobici(current_data, threshold=1, directed=True)
         count_data.append(current_counter)
 else:
     # read files
@@ -46,52 +47,53 @@ else:
         print(f'Counting trips for {date}')
         sys.stdout.flush()
         current_data = full_data[full_data['Inicio_del_viaje'].str.contains(date)]
-        current_counter = flows.count_trips_mibici(current_data, threshold=1)
+        current_counter = flows.count_trips_mibici(current_data, threshold=1, directed=True)
         count_data.append(current_counter)
 
 if system == 'ecobici':
     for date in dates:
         current_counter = count_data[dates.index(date)]
-        current_stations = np.unique(np.concatenate(current_counter[['Est_A', 'Est_B']].values))
+        current_stations = pd.unique(np.concatenate((current_counter['Est_A'].unique(), current_counter['Est_B'].unique())))
         for mesh in len_mesh:
             print(f'Calculating flows for {date} with mesh {mesh}')
             sys.stdout.flush()
-            try:
-                current_grid = grid.Grid(int(1.8*mesh), mesh, 'ecobici')
-                current_map = current_grid.map_around()
-                current_station_cells = flows.stations_and_cells(current_grid.geodataframe(), current_stations, stations)
-                current_graph = flows.abstract_flows(current_counter, current_grid.geodataframe(), current_station_cells, stations)
-                current_map = flows.plot_abstracted_graph(current_graph, current_map, title=f'Flows Ecobici: {date} - {int(mesh*1.8)}x{mesh}')
-                dir_name = f'{dir}abstracted_flows/{date}/'
-                if not os.path.exists(dir_name):
-                    os.makedirs(dir_name)
-                current_map.save(f'{dir_name}ecobici_{date}_{int(mesh*1.8)}x{mesh}.html')
-            except Exception as e:
-                print(f'Error: {e}')
+            for t in thresholds:
+                print(f'Calculating flows for {date} with mesh {mesh} and threshold {t}')
                 sys.stdout.flush()
-                continue
+                try:
+                    current_grid = grid.Grid(int(1.8*mesh), mesh, 'ecobici')
+                    current_map = current_grid.map_around()
+                    current_station_cells = flows.stations_and_cells(current_grid.geodataframe(), current_stations, stations)
+                    current_graph_df = flows.abstract_flows(current_counter, current_grid.geodataframe(), current_station_cells, stations, threshold=t)
+                    current_map = flows.plot_flows_dataframe(current_graph_df, current_grid.geodataframe(), current_map, title=f'Flows Ecobici: {date} - {int(mesh*1.8)}x{mesh} - threshold {t}')
+                    dir_name = f'{dir}abstracted_flows_eco/{date}/'
+                    if not os.path.exists(dir_name):
+                        os.makedirs(dir_name)
+                    current_map.save(f'{dir_name}ecobici_{date}_{int(mesh*1.8)}x{mesh}_threshold_{t}.html')
+                except Exception as e:
+                    print(f'Error: {e}')
+                    sys.stdout.flush()
+                    continue
 
 else:
     for date in dates:
         current_counter = count_data[dates.index(date)]
-        current_stations = np.unique(np.concatenate(current_counter[['Est_A', 'Est_B']].values))
+        current_stations = pd.unique(np.concatenate((current_counter['Est_A'].unique(), current_counter['Est_B'].unique())))
         for mesh in len_mesh:
             print(f'Calculating flows for {date} with mesh {mesh}')
             sys.stdout.flush()
-            try:
-                current_grid = grid.Grid(mesh, mesh, 'mibici')
-                current_map = current_grid.map_around()
-                current_station_cells = flows.stations_and_cells(current_grid.geodataframe(), current_stations, stations)
-                current_graph = flows.abstract_flows(current_counter, current_grid.geodataframe(), current_station_cells, stations)
-                current_map = flows.plot_abstracted_graph(current_graph, current_map, title=f'Flows Mibici: {date} - {mesh}x{mesh}')
-                dir_name = f'{dir}abstracted_flows/{date}/'
-                if not os.path.exists(dir_name):
-                    os.makedirs(dir_name)
-                current_map.save(f'{dir_name}mibici_{date}_{mesh}x{mesh}.html')
-            except Exception as e:
-                print(f'Error: {e}')
-                sys.stdout.flush()
-                continue
-                
-
-
+            for t in thresholds:
+                try:
+                    current_grid = grid.Grid(mesh, mesh, 'mibici')
+                    current_map = current_grid.map_around()
+                    current_station_cells = flows.stations_and_cells(current_grid.geodataframe(), current_stations, stations)
+                    current_graph_df = flows.abstract_flows(current_counter, current_grid.geodataframe(), current_station_cells, stations, threshold=t)
+                    current_map = flows.plot_flows_dataframe(current_graph_df, current_grid.geodataframe(), current_map, title=f'Flows Ecobici: {date} - {mesh}x{mesh} - threshold {t}')
+                    dir_name = f'{dir}abstracted_flows_mibici/{date}/'
+                    if not os.path.exists(dir_name):
+                        os.makedirs(dir_name)
+                    current_map.save(f'{dir_name}mibici_{date}_{mesh}x{mesh}_threshold_{t}.html')
+                except Exception as e:
+                    print(f'Error: {e}')
+                    sys.stdout.flush()
+                    continue
