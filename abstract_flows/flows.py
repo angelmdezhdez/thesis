@@ -133,120 +133,6 @@ def abstract_flows(trips_counted, cells_data, station_cells, station_matrix):
 
 
 
-#def plot_abstracted_graph(abstracted_graph, folium_map, range_weights=[1, 6], title=None):
-#    # Step 1: Find max and min flow_count
-#    flow_counts = [
-#        flow_data['flow_count']
-#        for cell_A in abstracted_graph
-#        for cell_B, flow_data in abstracted_graph[cell_A].items()
-#    ]
-#    flow_counts = list(set(flow_counts))
-#    max_flow = max(flow_counts) if flow_counts else 1
-#    min_flow = min(flow_counts) if flow_counts else 0
-#
-#    # Step 2: Create linspace for thickness and colors
-#    min_weight = range_weights[0]
-#    max_weight = range_weights[1]
-#    group_size = max(1, len(flow_counts) // range_weights[1])
-#    weights = np.linspace(min_weight, max_weight, num=len(flow_counts)) if flow_counts else [min_weight]
-#
-#    exp = 0.5
-#    #colors = plt.cm.inferno(np.linspace(1e-2, 1, num=range_weights[1])**exp) if flow_counts else [plt.cm.viridis(0)]
-#    colors = plt.cm.inferno(np.linspace(0, 1, num=len(weights))**exp) if flow_counts else [plt.cm.viridis(0)]
-#
-#    #colors_vector = []
-#    #for i in range(range_weights[1]):
-#    #    colors_vector += [colors[i].tolist()] * group_size
-#    #colors = colors_vector
-#
-#    sorted_flows = sorted(flow_counts)
-#    flow_to_weight = {flow: weight for flow, weight in zip(sorted_flows, weights)}
-#    flow_to_color = {flow: color for flow, color in zip(sorted_flows, colors)}
-#
-#    # Step 3: Find the most relevant node (highest sum of flows and most connections)
-#    node_relevance = {}
-#    for cell_A in abstracted_graph:
-#        total_weight = sum(flow_data['flow_count'] for flow_data in abstracted_graph[cell_A].values())
-#        connections = len(abstracted_graph[cell_A])
-#        node_relevance[cell_A] = total_weight + connections  # Combined score
-#
-#    most_relevant_node = max(node_relevance, key=node_relevance.get, default=None)
-#
-#    # Step 4: Draw edges and mass centers
-#    for cell_A in abstracted_graph:
-#        for cell_B, flow_data in abstracted_graph[cell_A].items():
-#            mass_center_A = flow_data['mass_center_A']
-#            mass_center_B = flow_data['mass_center_B']
-#            flow_count = flow_data['flow_count']
-#
-#            if mass_center_A != (None, None) and mass_center_B != (None, None) and mass_center_A != mass_center_B:
-#                lat1, lon1 = mass_center_A
-#                lat2, lon2 = mass_center_B
-#
-#                weight = flow_to_weight.get(flow_count, min_weight)
-#                color = flow_to_color.get(flow_count, plt.cm.viridis(0))
-#
-#                color_hex = '#{:02x}{:02x}{:02x}'.format(
-#                    int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)
-#                )
-#
-#                # Draw the arc
-#                arrow.draw_arrow(
-#                    folium_map,
-#                    lat1, lon1, lat2, lon2,
-#                    color=color_hex,
-#                    weight=weight,
-#                    tip=6,
-#                    text=f'Flujos: {int(flow_count)}',
-#                    radius_fac=1.0
-#                )
-#
-#                # Determine the color of the node
-#                node_color = 'red' if cell_A == most_relevant_node else 'black'
-#                folium.CircleMarker(
-#                    location=[lat1, lon1],
-#                    radius=7 if cell_A == most_relevant_node else 5,  
-#                    color=node_color,
-#                    fill=True,
-#                    fill_color=node_color,
-#                    fill_opacity=1.0,
-#                    popup=f'Centro de masa: {cell_A}'
-#                ).add_to(folium_map)
-#
-#                node_color = 'red' if cell_B == most_relevant_node else 'black'
-#                folium.CircleMarker(
-#                    location=[lat2, lon2],
-#                    radius=7 if cell_B == most_relevant_node else 5,
-#                    color=node_color,
-#                    fill=True,
-#                    fill_color=node_color,
-#                    fill_opacity=1.0,
-#                    popup=f'Centro de masa: {cell_B}'
-#                ).add_to(folium_map)
-#
-#    # Step 5: Add title if provided
-#    if title:
-#        title_html = f"""
-#        <h3 align="center" style="font-size:16px"><b>{title}</b></h3>
-#        """
-#        folium_map.get_root().html.add_child(folium.Element(title_html))
-#
-#    # Step 6: Add color bar
-#    fig, ax = plt.subplots(figsize=(4, 1))
-#    cmap = plt.cm.inferno
-#    norm = plt.Normalize(vmin=min_flow, vmax=max_flow)
-#    cb = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, orientation='horizontal')
-#    cb.set_label('Flow Count')
-#
-#    buf = io.BytesIO()
-#    plt.savefig(buf, format='png', bbox_inches='tight')
-#    plt.close(fig)
-#    encoded = base64.b64encode(buf.getvalue()).decode('utf-8')
-#    colorbar_html = f'<img src="data:image/png;base64,{encoded}" style="position: absolute; bottom: 10px; left: 10px; width: 200px;">'
-#    folium_map.get_root().html.add_child(folium.Element(colorbar_html))
-#
-#    return folium_map
-
 def plot_abstracted_graph(abstracted_graph, folium_map, range_weights=[1, 6], title=None):
     # Step 1: Find max and min flow_count
     flow_counts = [
@@ -264,7 +150,7 @@ def plot_abstracted_graph(abstracted_graph, folium_map, range_weights=[1, 6], ti
     weights = np.linspace(min_weight, max_weight, num=len(flow_counts)) if flow_counts else [min_weight]
 
     exp = 0.5
-    colors = plt.cm.inferno(np.linspace(0, 1, num=len(weights))**exp) if flow_counts else [plt.cm.viridis(0)]
+    colors = plt.cm.inferno(np.linspace(0, 1, num=len(weights))**exp) if flow_counts else [plt.cm.inferno(0)]
 
     sorted_flows = sorted(flow_counts)
     flow_to_weight = {flow: weight for flow, weight in zip(sorted_flows, weights)}
