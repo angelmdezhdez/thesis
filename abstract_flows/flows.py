@@ -41,192 +41,307 @@ def stations_and_cells(data_grid, stations_ids, stations_matrix):
             stations_cells[id] = cell
     return stations_cells
 
-def count_trips_ecobici(data_user, threshold = 5, complement = False):
-    viajes_user = data_user.groupby([data_user[['Ciclo_Estacion_Retiro', 'Ciclo_Estacion_Arribo']].min(axis=1), data_user[['Ciclo_Estacion_Retiro', 'Ciclo_Estacion_Arribo']].max(axis=1)]).size().reset_index(name='counts')
-    viajes_user.columns = ['Est_A', 'Est_B', 'counts']
+def count_trips_ecobici(data_user, threshold=5, complement=False, directed=False):
+    if directed:
+        # For directed trips, group by the exact origin and destination
+        viajes_user = data_user.groupby(['Ciclo_Estacion_Retiro', 'Ciclo_Estacion_Arribo']).size().reset_index(name='counts')
+        viajes_user.columns = ['Est_A', 'Est_B', 'counts']
+    else:
+        # For undirected trips, group by min and max of origin and destination
+        viajes_user = data_user.groupby([data_user[['Ciclo_Estacion_Retiro', 'Ciclo_Estacion_Arribo']].min(axis=1), 
+                                      data_user[['Ciclo_Estacion_Retiro', 'Ciclo_Estacion_Arribo']].max(axis=1)]).size().reset_index(name='counts')
+        viajes_user.columns = ['Est_A', 'Est_B', 'counts']
+
+    # Apply threshold filtering
     if not complement:
         viajes_user = viajes_user[viajes_user['counts'] >= threshold]
     else:
         viajes_user = viajes_user[viajes_user['counts'] < threshold]
+
     if viajes_user.empty:
         return None
+
+    # Calculate probabilities
     total = viajes_user['counts'].sum()
-    viajes_user['prob'] = viajes_user['counts']/total
-    viajes_user = viajes_user.sort_values(by = 'prob', ascending = False).reset_index(drop=True)
+    viajes_user['prob'] = viajes_user['counts'] / total
+
+    # Sort by probability
+    viajes_user = viajes_user.sort_values(by='prob', ascending=False).reset_index(drop=True)
     return viajes_user
 
-def count_trips_mibici(data_user, threshold = 5, complement = False):
-    viajes_user = data_user.groupby([data_user[['Origen_Id', 'Destino_Id']].min(axis=1), data_user[['Origen_Id', 'Destino_Id']].max(axis=1)]).size().reset_index(name='counts')
-    viajes_user.columns = ['Est_A', 'Est_B', 'counts']
+
+def count_trips_mibici(data_user, threshold=5, complement=False, directed=False):
+    if directed:
+        # For directed trips, group by the exact origin and destination
+        viajes_user = data_user.groupby(['Origen_Id', 'Destino_Id']).size().reset_index(name='counts')
+        viajes_user.columns = ['Est_A', 'Est_B', 'counts']
+    else:
+        # For undirected trips, group by min and max of origin and destination
+        viajes_user = data_user.groupby([data_user[['Origen_Id', 'Destino_Id']].min(axis=1), 
+                                      data_user[['Origen_Id', 'Destino_Id']].max(axis=1)]).size().reset_index(name='counts')
+        viajes_user.columns = ['Est_A', 'Est_B', 'counts']
+
+    # Apply threshold filtering
     if not complement:
         viajes_user = viajes_user[viajes_user['counts'] >= threshold]
     else:
         viajes_user = viajes_user[viajes_user['counts'] < threshold]
+
     if viajes_user.empty:
         return None
+
+    # Calculate probabilities
     total = viajes_user['counts'].sum()
-    viajes_user['prob'] = viajes_user['counts']/total
-    viajes_user = viajes_user.sort_values(by = 'prob', ascending = False).reset_index(drop=True)
+    viajes_user['prob'] = viajes_user['counts'] / total
+
+    # Sort by probability
+    viajes_user = viajes_user.sort_values(by='prob', ascending=False).reset_index(drop=True)
     return viajes_user
 
-def abstract_flows(trips_counted, cells_data, station_cells, station_matrix):
+
+def abstract_flows(trips_counted, cells_data, station_cells, station_matrix, threshold=1):
     '''
-    trips_counted: dataframe with columns Est_A, Est_B, counts, prob
-    station_cells: dictionary with station_id as key and cell as value
-    station_matrix: numpy array with station_id, lat, lon
+    Parameters:
+        trips_counted (DataFrame): DataFrame with columns Est_A, Est_B, counts, prob.
+        cells_data (DataFrame): DataFrame with cell information (e.g., lat1, lat2, lon1, lon2).
+        station_cells (dict): Dictionary with station_id as key and cell as value.
+        station_matrix (numpy.ndarray): Array with station_id, lat, lon.
+        threshold (int): Minimum flow count to include in the DataFrame (default is 0).
+
+    Returns:
+        flows_df (DataFrame): DataFrame with columns i_A, j_A, i_B, j_B, flow_count, mass_center_A, and mass_center_B.
     '''
     cell_flows = defaultdict(lambda: defaultdict(int))
 
-    # agrupar los viajes por celda
+    # Group trips by cell
     for _, row in trips_counted.iterrows():
         try:
             cell_A = station_cells[row['Est_A']]
             cell_B = station_cells[row['Est_B']]
             cell_flows[cell_A][cell_B] += row['counts']
-        except:
+        except KeyError:
             continue
 
-    # calcular los centros de masa de las celdas
+    # Calculate mass centers of the cells
     cell_mass_centers = {}
     
     for cell_A in cell_flows:
         total_trips = sum(cell_flows[cell_A].values())
         lat_sum, lon_sum = 0, 0
 
-        # recolectar las estaciones en la celda A
+        # Collect stations in cell_A
         stations_in_cell_A = [s for s, cell in station_cells.items() if cell == cell_A]
         if stations_in_cell_A:
             for station in stations_in_cell_A:
                 lat, lon = find_station(station, station_matrix)
-                # Sumar las coordenadas de las estaciones ponderadas por el número de viajes
+                # Sum coordinates weighted by the number of trips
                 lat_sum += lat * trips_counted[trips_counted['Est_A'] == station]['counts'].sum()
                 lon_sum += lon * trips_counted[trips_counted['Est_A'] == station]['counts'].sum()
 
-            # Calculamos el centro de masa
+            # Calculate mass center
             if total_trips > 0:
                 center_lat = lat_sum / total_trips
                 center_lon = lon_sum / total_trips
                 cell_mass_centers[cell_A] = (center_lat, center_lon)
             else:
-                # Si no hay viajes, asignamos un valor predeterminado
+                # If no trips, assign a default value
                 cell_mass_centers[cell_A] = (None, None)
         else:
-            # Si no hay estaciones en la celda, asignamos un valor predeterminado
+            # If no stations in the cell, assign a default value
             cell_mass_centers[cell_A] = (None, None)
 
+        # Ensure mass center is within the cell
         if find_location_cell(cells_data, cell_mass_centers[cell_A]) != cell_A:
-            cell_mass_centers[cell_A] = (np.mean([cells_data.iloc[cell_A[0]]['lat1'], cells_data.iloc[cell_A[0]]['lat2']]), np.mean([cells_data.iloc[cell_A[1]]['lon1'], cells_data.iloc[cell_A[1]]['lon2']]))
+            cell_mass_centers[cell_A] = (
+                np.mean([cells_data.iloc[cell_A[0]]['lat1'], cells_data.iloc[cell_A[0]]['lat2']]),
+                np.mean([cells_data.iloc[cell_A[1]]['lon1'], cells_data.iloc[cell_A[1]]['lon2']])
+            )
 
-    # construir el diccionario de flujos abstractos
-    abstracted_flows = {}
+    # Build the flows DataFrame
+    flows_data = []
     for cell_A in cell_flows:
-        abstracted_flows[cell_A] = {}
-        for cell_B in cell_flows[cell_A]:
-            # verificar si la celda B tiene estaciones
-            mass_center_B = cell_mass_centers.get(cell_B, (None, None))
-            abstracted_flows[cell_A][cell_B] = {
-                'flow_count': cell_flows[cell_A][cell_B],
-                'mass_center_A': cell_mass_centers.get(cell_A, (None, None)),
-                'mass_center_B': mass_center_B
-            }
-    return abstracted_flows
+        for cell_B, flow_count in cell_flows[cell_A].items():
+            if flow_count >= threshold:  # Apply threshold
+                mass_center_A = cell_mass_centers.get(cell_A, (None, None))
+                mass_center_B = cell_mass_centers.get(cell_B, (None, None))
+                flows_data.append([
+                    cell_A[0], cell_A[1],  # i_A, j_A
+                    cell_B[0], cell_B[1],  # i_B, j_B
+                    flow_count,            # flow_count
+                    mass_center_A,         # mass_center_A
+                    mass_center_B          # mass_center_B
+                ])
+
+    # Create DataFrame
+    flows_df = pd.DataFrame(
+        flows_data,
+        columns=['i_A', 'j_A', 'i_B', 'j_B', 'flow_count', 'mass_center_A', 'mass_center_B']
+    )
+
+    return flows_df
 
 
 
-def plot_abstracted_graph(abstracted_graph, folium_map, range_weights=[1, 6], title=None):
+def plot_flows_dataframe(flows_df, cell_data, folium_map, range_weights=[1, 6], title=None):
+    '''
+    Parameters:
+        flows_df (DataFrame): DataFrame with columns i_A, j_A, i_B, j_B, flow_count, mass_center_A, and mass_center_B.
+        cell_data (DataFrame): DataFrame with columns i, j, lat1, lon1, lat2, lon2.
+        folium_map (folium.Map): Folium map object.
+        range_weights (list): Range of weights for edge thickness.
+        title (str): Title of the map.
+    '''
     # Step 1: Find max and min flow_count
-    flow_counts = [
-        flow_data['flow_count']
-        for cell_A in abstracted_graph
-        for cell_B, flow_data in abstracted_graph[cell_A].items()
-    ]
-    flow_counts = list(set(flow_counts))
-    max_flow = max(flow_counts) if flow_counts else 1
-    min_flow = min(flow_counts) if flow_counts else 0
+    flow_counts = flows_df['flow_count'].unique()
+    max_flow = flow_counts.max() if len(flow_counts) > 0 else 1
+    min_flow = flow_counts.min() if len(flow_counts) > 0 else 0
 
     # Step 2: Create linspace for thickness and colors
     min_weight = range_weights[0]
     max_weight = range_weights[1]
-    weights = np.linspace(min_weight, max_weight, num=len(flow_counts)) if flow_counts else [min_weight]
+    weights = np.linspace(min_weight, max_weight, num=len(flow_counts)) if len(flow_counts) > 0 else [min_weight]
 
     exp = 0.5
-    colors = plt.cm.inferno(np.linspace(0, 1, num=len(weights))**exp) if flow_counts else [plt.cm.inferno(0)]
+    colors = plt.cm.inferno(np.linspace(0, 1, num=len(weights))**exp) if len(flow_counts) > 0 else [plt.cm.inferno(0)]
 
     sorted_flows = sorted(flow_counts)
     flow_to_weight = {flow: weight for flow, weight in zip(sorted_flows, weights)}
     flow_to_color = {flow: color for flow, color in zip(sorted_flows, colors)}
 
-    # Step 3: Find the most relevant node (highest sum of flows and most connections)
-    node_relevance = {}
+    # Step 3: Find the most relevant node and self-connected nodes
+    node_relevance = defaultdict(int)
     self_connected_nodes = set()
-    for cell_A in abstracted_graph:
-        total_weight = sum(flow_data['flow_count'] for flow_data in abstracted_graph[cell_A].values())
-        connections = len(abstracted_graph[cell_A])
-        node_relevance[cell_A] = total_weight + connections  # Combined score
-        if cell_A in abstracted_graph[cell_A]:
+
+    # Calculate node relevance and identify self-connected nodes
+    for _, row in flows_df.iterrows():
+        cell_A = (row['i_A'], row['j_A'])
+        cell_B = (row['i_B'], row['j_B'])
+        flow_count = row['flow_count']
+
+        node_relevance[cell_A] += flow_count
+        node_relevance[cell_B] += flow_count
+
+        if cell_A == cell_B:
             self_connected_nodes.add(cell_A)
+
 
     most_relevant_node = max(node_relevance, key=node_relevance.get, default=None)
 
-    # Step 4: Draw edges and mass centers
-    for cell_A in abstracted_graph:
-        for cell_B, flow_data in abstracted_graph[cell_A].items():
-            mass_center_A = flow_data['mass_center_A']
-            mass_center_B = flow_data['mass_center_B']
-            flow_count = flow_data['flow_count']
+    # Step 4: Compute trips starting and ending in each cell
+    trips_start = defaultdict(int)
+    trips_end = defaultdict(int)
 
-            if mass_center_A != (None, None) and mass_center_B != (None, None) and mass_center_A != mass_center_B:
-                lat1, lon1 = mass_center_A
-                lat2, lon2 = mass_center_B
+    for _, row in flows_df.iterrows():
+        cell_A = (row['i_A'], row['j_A'])
+        cell_B = (row['i_B'], row['j_B'])
+        flow_count = row['flow_count']
 
-                weight = flow_to_weight.get(flow_count, min_weight)
-                color = flow_to_color.get(flow_count, plt.cm.viridis(0))
+        trips_start[cell_A] += flow_count
+        trips_end[cell_B] += flow_count
 
-                color_hex = '#{:02x}{:02x}{:02x}'.format(
-                    int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)
-                )
+    # Step 5: Plot rectangles for trips starting and ending in each cell
+    for _, row in cell_data.iterrows():
+        cell = (row['i'], row['j'])
+        lat1, lon1 = row['lat1'], row['lon1']
+        lat2, lon2 = row['lat2'], row['lon2']
 
-                # Draw the arc
-                arrow.draw_arrow(
-                    folium_map,
-                    lat1, lon1, lat2, lon2,
-                    color=color_hex,
-                    weight=weight,
-                    tip=6,
-                    text=f'Flujos: {int(flow_count)}',
-                    radius_fac=1.0
-                )
+        if cell in trips_start or cell in trips_end:
+            total_trips = trips_start.get(cell, 0) + trips_end.get(cell, 0)
+            if total_trips > 0:
+                start_percent = trips_start.get(cell, 0) / total_trips
+                end_percent = trips_end.get(cell, 0) / total_trips
 
-            # Determine the color of the node
-            if cell_A in self_connected_nodes:
-                node_color = 'green'
-                add = '\n(Conexión interna)'
-                if cell_A == most_relevant_node:
-                    node_color = 'red'
+                # Calculate bounds for the left (end) and right (start) parts of the rectangle
+                mid_lat = lat1 + (lat2 - lat1) * end_percent
+
+                # Draw the left part (end trips) in dark gray
+                folium.Rectangle(
+                    bounds=[(lat1, lon1), (mid_lat, lon2)],
+                    color='black',  # Dark gray
+                    fill=True,
+                    fill_color='#555555',
+                    fill_opacity=0.25,
+                    popup=f'Celda: {cell}\nViajes que terminan: {end_percent:.2%}'
+                ).add_to(folium_map)
+
+                # Draw the right part (start trips) in light gray
+                folium.Rectangle(
+                    bounds=[(mid_lat, lon1), (lat2, lon2)],
+                    color='black',  # Light gray
+                    fill=True,
+                    fill_color='#AAAAAA',
+                    fill_opacity=0.25,
+                    popup=f'Celda: {cell}\nViajes que inician: {start_percent:.2%}'
+                ).add_to(folium_map)
+
+    # Step 6: Draw edges and mass centers
+    for _, row in flows_df.iterrows():
+        cell_A = (row['i_A'], row['j_A'])
+        cell_B = (row['i_B'], row['j_B'])
+        flow_count = row['flow_count']
+        mass_center_A = row['mass_center_A']
+        mass_center_B = row['mass_center_B']
+
+        if mass_center_A != (None, None) and mass_center_B != (None, None) and mass_center_A != mass_center_B:
+            lat1, lon1 = mass_center_A
+            lat2, lon2 = mass_center_B
+
+            weight = flow_to_weight.get(flow_count, min_weight)
+            color = flow_to_color.get(flow_count, plt.cm.viridis(0))
+
+            color_hex = '#{:02x}{:02x}{:02x}'.format(
+                int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)
+            )
+
+            # Draw the arc
+            arrow.draw_arrow(
+                folium_map,
+                lat1, lon1, lat2, lon2,
+                color=color_hex,
+                weight=weight,
+                tip=6,
+                text=f'Flujos: {int(flow_count)}',
+                radius_fac=1.0
+            )
+
+    # Step 7: Plot nodes with appropriate colors
+    max_relevance = max(node_relevance.values()) if node_relevance else 1
+    green_intensity = np.linspace(100, 255, num=len(node_relevance)) if len(node_relevance) > 0 else [0]
+    for cell, relevance in node_relevance.items():
+        # Get mass center from flows_df
+        mass_center = flows_df[(flows_df['i_A'] == cell[0]) & (flows_df['j_A'] == cell[1])]['mass_center_A'].iloc[0]
+        if mass_center != (None, None):
+            lat, lon = mass_center
+
+            # Determine node color
+            if cell == most_relevant_node:
+                node_color = 'red'
+            elif cell in self_connected_nodes:
+                # Gradient of green based on relevance
+                current_green = int(green_intensity[sorted(node_relevance, key=node_relevance.get).index(cell)])
+                node_color = f'#00{current_green:02x}00'  # Green gradient
             else:
                 node_color = 'black'
-                add = ''
-                if cell_A == most_relevant_node:
-                    node_color = 'red'
 
+            # Plot the node
             folium.CircleMarker(
-                location=[mass_center_A[0], mass_center_A[1]],
-                radius=7 if cell_A == most_relevant_node else 5,  
+                location=[lat, lon],
+                radius=7 if cell == most_relevant_node else 5,
                 color=node_color,
                 fill=True,
                 fill_color=node_color,
                 fill_opacity=1.0,
-                popup=f'Centro de masa: {cell_A}' + add
+                popup=f'Celda: {cell}\nRelevancia: {relevance:.2f}'
             ).add_to(folium_map)
 
-    # Step 5: Add title if provided
+    # Step 8: Add title if provided
     if title:
         title_html = f"""
         <h3 align="center" style="font-size:16px"><b>{title}</b></h3>
         """
         folium_map.get_root().html.add_child(folium.Element(title_html))
 
-    # Step 6: Add color bar
+    # Step 9: Add color bar
     fig, ax = plt.subplots(figsize=(4, 1))
     cmap = plt.cm.inferno
     norm = plt.Normalize(vmin=min_flow, vmax=max_flow)
