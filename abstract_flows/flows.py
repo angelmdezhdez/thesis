@@ -7,7 +7,8 @@ import sys
 from collections import defaultdict
 import base64
 import io
-import arrow
+from . import arrow
+from . import grid
 
 def find_location_cell(data_grid, station_array):
     #[lat, lon] = station
@@ -309,7 +310,11 @@ def plot_flows_dataframe(flows_df, cell_data, folium_map, range_weights=[1, 6], 
     green_intensity = np.linspace(100, 255, num=len(node_relevance)) if len(node_relevance) > 0 else [0]
     for cell, relevance in node_relevance.items():
         # Get mass center from flows_df
-        mass_center = flows_df[(flows_df['i_A'] == cell[0]) & (flows_df['j_A'] == cell[1])]['mass_center_A'].iloc[0]
+        try:
+            mass_center = flows_df[(flows_df['i_A'] == cell[0]) & (flows_df['j_A'] == cell[1])]['mass_center_A'].iloc[0]
+        except:
+            mass_center = (None, None)
+            
         if mass_center != (None, None):
             lat, lon = mass_center
 
@@ -356,3 +361,44 @@ def plot_flows_dataframe(flows_df, cell_data, folium_map, range_weights=[1, 6], 
     folium_map.get_root().html.add_child(folium.Element(colorbar_html))
 
     return folium_map
+
+
+def create_adjacency_matrix(flows_df, dims, directed=True):
+    '''
+    Parameters:
+        flows_df (DataFrame): DataFrame with columns i_A, j_A, i_B, j_B, flow_count.
+        dims (tuple): Dimensions of the grid (rows, columns).
+        directed (bool): If True, the graph is directed; if False, the graph is undirected.
+
+    Returns:
+        adjacency_matrix (numpy.ndarray): Adjacency matrix of the graph with size (dims[0]*dims[1], (dims[0]*dims[1])).
+        nodes (list): List of nodes (i, j) in the same order as the adjacency matrix.
+    '''
+    # Initialize the adjacency matrix with zeros
+    n = dims[0] * dims[1]
+    adjacency_matrix = np.zeros((n, n), dtype=int)
+    
+    # Create a mapping from (i, j) to a unique index
+    def node_to_index(i, j):
+        return i * dims[1] + j
+    
+    # Fill the adjacency matrix
+    for _, row in flows_df.iterrows():
+        i_A, j_A = row['i_A'], row['j_A']
+        i_B, j_B = row['i_B'], row['j_B']
+        flow_count = row['flow_count']
+        
+        # Convert (i, j) to indices
+        idx_A = node_to_index(i_A, j_A)
+        idx_B = node_to_index(i_B, j_B)
+        
+        # Update the adjacency matrix
+        adjacency_matrix[idx_A, idx_B] += flow_count
+        
+        if not directed:
+            adjacency_matrix[idx_B, idx_A] += flow_count
+    
+    # Generate the list of nodes in the same order as the adjacency matrix
+    nodes = [(i, j) for i in range(dims[0]) for j in range(dims[1])]
+    
+    return adjacency_matrix, nodes
