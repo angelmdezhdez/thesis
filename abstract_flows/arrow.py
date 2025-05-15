@@ -81,7 +81,7 @@ def center_y(x1, y1, x2, y2, radius):
     return y3 + math.sqrt(radsq - ((q / 2) * (q / 2))) * ((x2-x1) / q)
 
 
-def draw_arrow(folium_map, lat1, lon1, lat2, lon2, color='blue', weight=3, tip=6, text='', radius_fac=1.0):
+def draw_arrow(folium_map, lat1, lon1, lat2, lon2, color='blue', weight=3, tip=6, text='', radius_fac=1.0, opa=0.5):
     """
     Draw an arc arrow from two points on a folium map.
     
@@ -119,7 +119,7 @@ def draw_arrow(folium_map, lat1, lon1, lat2, lon2, color='blue', weight=3, tip=6
     arc_points = iter(zip(arc_y, arc_x))
     ant = next(arc_points)
     for p in arc_points:
-        folium.PolyLine(locations=[ant, p], color=color, weight = weight, popup=text, opacity=0.5).add_to(folium_map)
+        folium.PolyLine(locations=[ant, p], color=color, weight = weight, popup=text, opacity=opa).add_to(folium_map)
         ant = p
 
     #rotation = math.pi/2 - end + math.pi
