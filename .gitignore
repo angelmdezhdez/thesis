@@ -1,6 +1,7 @@
 # Archivos de configuración de usuarios y del sistema
 *.DS_Store
 *.Rhistory
+*.html
 .CFUserTextEncoding
 .anydesk/
 .config/
