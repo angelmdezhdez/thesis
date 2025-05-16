@@ -1,107 +1,17 @@
 import numpy as np
 import torch
-import torch.nn as nn
-from pathlib import Path
-
-# ==============================
-# Utilidades y carga de datos
-# ==============================
-
-def load_data(flow_file, laplacian_file, device):
-    F = np.load(flow_file)  
-    L = np.load(laplacian_file)  
-    F = torch.tensor(F, dtype=torch.float32, device=device)
-    L = torch.tensor(L, dtype=torch.float32, device=device)
-    return F, L
-
-# ==============================
-# Función de optimización alpha
-# ==============================
-
-def optimize_alpha(F, D, lambda_reg, n_iter=100, lr=1e-2):
-    T, n, _ = F.shape
-    k = D.shape[1]
-    alpha = torch.randn(T, k, n, device=F.device, requires_grad=True)
-    optimizer = torch.optim.Adam([alpha], lr=lr)
-
-    for _ in range(n_iter):
-        optimizer.zero_grad()
-        recon = torch.einsum('ik,kjn->ijn', D.T, alpha)  # D @ alpha
-        loss_rec = ((F - recon)**2).sum()
-        loss_sparse = lambda_reg * alpha.abs().sum()
-        loss = loss_rec + loss_sparse
-        loss.backward()
-        optimizer.step()
-
-    return alpha.detach()
-
-# ==============================
-# Función de optimización D
-# ==============================
-
-def optimize_dictionary(F, alpha, L, gamma_reg, n_iter=100, lr=1e-2):
-    T, n, _ = F.shape
-    k = alpha.shape[1]
-    D = torch.randn(n, k, device=F.device, requires_grad=True)
-    optimizer = torch.optim.Adam([D], lr=lr)
-
-    for _ in range(n_iter):
-        optimizer.zero_grad()
-        recon = torch.einsum('ik,tkn->tin', D, alpha)  # D @ alpha
-        loss_rec = ((F - recon)**2).sum()
-        loss_smooth = gamma_reg * torch.trace(D.T @ L @ D)
-        loss = loss_rec + loss_smooth
-        loss.backward()
-        optimizer.step()
-
-    return D.detach()
-
-# ==============================
-# Entrenamiento principal
-# ==============================
-
-def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lambda_reg=0.01, gamma_reg=0.1, alpha_steps=100, d_steps=100, lr=1e-2):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"Using device: {device}")
-
-    F, L = load_data(flow_file, laplacian_file, device)
-    T, n, _ = F.shape
-
-    # Inicialización aleatoria del diccionario
-    D = torch.randn(n, k, device=device)
-
-    for epoch in range(n_epochs):
-        print(f"Epoch {epoch+1}/{n_epochs}")
-        alpha = optimize_alpha(F, D, lambda_reg, n_iter=alpha_steps, lr=lr)
-        D = optimize_dictionary(F, alpha, L, gamma_reg, n_iter=d_steps, lr=lr)
-
-    return D, alpha
-
-# ==============================
-# Ejecución principal
-# ==============================
-
-if __name__ == '__main__':
-    flow_path = 'flows.npy'  # Reemplace con su ruta
-    lap_path = 'laplacian.npy'  # Reemplace con su ruta
-    D, alpha = train_dictionary_learning(flow_path, lap_path)
-
-    # Guardar resultados si se desea
-    torch.save(D.cpu(), 'dictionary.pt')
-    torch.save(alpha.cpu(), 'weights.pt')
-
-
-
-import numpy as np
-import torch
 from torch.utils.data import Dataset, DataLoader
-from pathlib import Path
+import argparse
+import os
+import sys
+sys.stdout.flush()
 
 # ==============================
-# Dataset personalizado
+# Personalized Dataset
 # ==============================
 
 class FlowDataset(Dataset):
+    '''This class creates a dataset from the flow tensor.'''
     def __init__(self, F_tensor):
         self.F = F_tensor
 
@@ -112,10 +22,11 @@ class FlowDataset(Dataset):
         return self.F[idx], idx
 
 # ==============================
-# Utilidades y carga de datos
+# Utilities
 # ==============================
 
 def load_data(flow_file, laplacian_file, device):
+    '''This function loads the flow and laplacian data from files.'''
     F = np.load(flow_file)  # (T, n, n)
     L = np.load(laplacian_file)  # (n, n)
     F = torch.tensor(F, dtype=torch.float32, device=device)
@@ -123,46 +34,61 @@ def load_data(flow_file, laplacian_file, device):
     return F, L
 
 # ==============================
-# Optimiza alpha por batches
+# alpha optimization
 # ==============================
 
-def optimize_alpha_batches(D, flow_loader, T, k, lambda_reg, device, n_iter=100, lr=1e-2):
+def optimize_alpha_batches(D, flow_loader, T, k, lambda_reg, device, n_iter=100, lr=1e-2, regularization = 'l2'):
     n = D.shape[0]
-    alpha_global = torch.zeros(T, k, n, device=device)  # No requiere grad, se actualiza manualmente
+    # since we are using batch optimization, this global alpha will be updated by parts
+    # so we dont need gradients for it
+    alpha_global = torch.zeros(T, k, n, device=device)  
 
     for _ in range(n_iter):
         for batch, idx in flow_loader:
             batch = batch.to(device)
             batch_size = batch.shape[0]
 
-            # Crear batch_alpha con gradientes
+            # batch_alpha is the alpha for the current batch (this one requires gradients)
             batch_alpha = torch.randn(batch_size, k, n, device=device, requires_grad=True)
             optimizer = torch.optim.Adam([batch_alpha], lr=lr)
 
-            for _ in range(1):  # Un paso de optimización por batch
-                optimizer.zero_grad()
-                recon = torch.matmul(D, batch_alpha)  # D: (n, k), batch_alpha: (B, k, n) → recon: (B, n, n)
-                loss_rec = torch.norm(batch - recon, p='fro')**2
+            # we give an only step to the optimizer
+            optimizer.zero_grad()
+            # D: dictionary (n, k), n is the number of nodes, k is the number of elements in the dictionary
+            # batch_alpha: (B, k, n), where B is the batch size
+            # recon: (B, n, n), batch: (B, n, n)
+            recon = torch.matmul(D, batch_alpha) 
+            # sum over the batch of frobenius norm squared 
+            loss_rec = ((batch - recon) ** 2).sum()
+            # regularization
+            if regularization == 'l2':
+                loss_sparse = lambda_reg * torch.norm(batch_alpha, p='fro')**2
+            elif regularization == 'l1':
                 loss_sparse = lambda_reg * batch_alpha.abs().sum()
-                loss = loss_rec + loss_sparse
-                loss.backward()
-                optimizer.step()
+            else:
+                loss_sparse = torch.tensor(0.0, device=device)
+            # total loss
+            loss = loss_rec + loss_sparse
 
-            # Actualizar alpha_global solo en los índices del batch
+            # optimization step
+            loss.backward()
+            optimizer.step()
+
+            # update the global alpha with the current batch_alpha
             alpha_global[idx] = batch_alpha.detach()
 
     return alpha_global
 
 # ==============================
-# Optimiza diccionario con acumulación de gradientes
+# dictionary optimization with cumulative gradients
 # ==============================
 
-def optimize_dictionary_batches(F, alpha, L, flow_loader, gamma_reg, n_iter=100, lr=1e-2):
+def optimize_dictionary_batches(F, alpha, L, flow_loader, gamma_reg, n_iter=100, lr=1e-2, smooth=True):
     T, n, _ = F.shape
     k = alpha.shape[1]
     device = F.device
 
-    # Diccionario inicializado aleatoriamente
+    # D: dictionary, it requires gradients
     D = torch.randn(n, k, device=device, requires_grad=True)
     optimizer = torch.optim.Adam([D], lr=lr)
 
@@ -170,36 +96,42 @@ def optimize_dictionary_batches(F, alpha, L, flow_loader, gamma_reg, n_iter=100,
         optimizer.zero_grad()
         total_loss_rec = 0.0
 
+        # acumulate gradients since we are using batch optimization
+        # we need to accumulate the loss for each batch
+        total_loss_tensor = torch.tensor(0.0, device=device)
+
         for batch, idx in flow_loader:
             batch = batch.to(device)
-            batch_alpha = alpha[idx]  # (B, k, n)
-
-            # Reconstrucción: D (n, k) @ alpha (B, k, n) → (B, n, n)
-            recon = torch.matmul(D, batch_alpha)  # (B, n, n)
+            # select the alpha for the current batch
+            batch_alpha = alpha[idx]
             
-            # Frobenius norm squared
-            loss_rec = torch.norm(batch - recon, p='fro')**2
-            loss_rec.backward()  # Acumulación de gradientes
+            # reconstruction
+            recon = torch.matmul(D, batch_alpha)  # (B, n, n)
+            # loss reconstruction
+            loss_rec = ((batch - recon) ** 2).sum()
+            total_loss_tensor += loss_rec
             total_loss_rec += loss_rec.item()
+        
+        # regularization over the spatial smoothness
+        if smooth:
+            loss_smooth = gamma_reg * torch.trace(D.T @ L @ D)
+            total_loss_tensor += loss_smooth
+        else:
+            loss_smooth = torch.tensor(0.0, device=device)
 
-        # Regularización de suavidad espacial (fuera del batch)
-        loss_smooth = gamma_reg * torch.trace(D.T @ L @ D)
-        loss_smooth.backward()  # Se acumula sobre los gradientes ya existentes
-
+        total_loss_tensor.backward()
         optimizer.step()
 
-        # (Opcional) Puedes imprimir o almacenar la pérdida total si lo deseas
-        # print(f"Epoch {epoch}: Loss_rec={total_loss_rec:.2f}, Loss_smooth={loss_smooth.item():.2f}")
-
-    return D.detach()
+    return D.detach(), total_loss_rec + loss_smooth.item()
 
 # ==============================
-# Entrenamiento principal
+# train 
 # ==============================
 
-def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lambda_reg=0.01, gamma_reg=0.1, alpha_steps=100, d_steps=100, lr=1e-2, batch_size=32):
+def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lambda_reg=0.01, gamma_reg=0.1, alpha_steps=100, d_steps=100, lr=1e-2, batch_size=32, regularization='l2', smooth=False):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
+    sys.stdout.flush()
 
     F, L = load_data(flow_file, laplacian_file, device)
     T, n, _ = F.shape
@@ -209,21 +141,116 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
 
     D = torch.randn(n, k, device=device)
 
+    # early stop
+    best_loss = float('inf')
+    patience = 10
+
+    loss_vector = []
+
     for epoch in range(n_epochs):
         print(f"Epoch {epoch+1}/{n_epochs}")
-        alpha = optimize_alpha_batches(D, loader, T, k, lambda_reg, device, n_iter=alpha_steps, lr=lr)
-        D = optimize_dictionary_batches(F, alpha, L, loader, gamma_reg, n_iter=d_steps, lr=lr)
+        sys.stdout.flush()
 
-    return D, alpha
+        alpha = optimize_alpha_batches(D, loader, T, k, lambda_reg, device, n_iter=alpha_steps, lr=lr)
+        D, loss = optimize_dictionary_batches(F, alpha, L, loader, gamma_reg, n_iter=d_steps, lr=lr)
+
+        print(f"Loss: {loss:.4f}")
+        sys.stdout.flush()
+
+        loss_vector.append(loss)
+        if loss < best_loss:
+            best_loss = loss
+            patience = 10
+        else:
+            patience -= 1
+            if patience == 0:
+                print("Early stopping")
+                sys.stdout.flush()
+                break
+
+    print("Training finished")
+    sys.stdout.flush()
+
+    return D, alpha, loss_vector
 
 # ==============================
-# Ejecución principal
+# main
 # ==============================
 
 if __name__ == '__main__':
-    flow_path = 'flows.npy'  # Reemplaza con tu ruta
-    lap_path = 'laplacian.npy'  # Reemplaza con tu ruta
-    D, alpha = train_dictionary_learning(flow_path, lap_path)
+    # python3 dict_arr_learning.py -system experiment -flows flows.npy -laplacian laplacian.npy -natoms 10 -ep 10 -reg l2 -lambda 0.01 -smooth True -gamma 0.1 -as 100 -ds 100 -lr 1e-2 -bs 32
 
-    torch.save(D.cpu(), 'dictionary.pt')
-    torch.save(alpha.cpu(), 'weights.pt')
+    parser = argparse.ArgumentParser(description='Dictionary Learning for Arrival Flows')
+    parser.add_argument('-system', '--system_key', type=str, default='experiment', help='system of flows', required = True)
+    parser.add_argument('-flows', '--flows', type=str, default='flows.npy', help='Path to the flow tensor file', required = True)
+    parser.add_argument('-lap', '--laplacian', type=str, default='laplacian.npy', help='Path to the laplacian file', required = True)
+    parser.add_argument('-natoms', '--number_atoms', type=int, default=10, help='Number of dictionary elements', required = True)
+    parser.add_argument('-ep', '--epochs', type=int, default=10, help='Number of epochs', required = True)
+    parser.add_argument('-reg', '--regularization', type=str, default='l2', help='which regularization', required = True)
+    parser.add_argument('-lambda', '--lambda_reg', type=float, default=0.01, help='regularization parameter', required = True)
+    parser.add_argument('-smooth', '--smooth', type=bool, default=False, help='smoothness True/False', required = True)
+    parser.add_argument('-gamma', '--gamma_reg', type=float, default=0.1, help='smoothness regularization parameter', required = True)
+    parser.add_argument('-as', '--alpha_steps', type=int, default=100, help='number of steps for alpha optimization', required = True)
+    parser.add_argument('-ds', '--dict_steps', type=int, default=100, help='number of steps for dictionary optimization', required = True)
+    parser.add_argument('-lr', '--learning_rate', type=float, default=1e-2, help='learning rate', required = True)
+    parser.add_argument('-bs', '--batch_size', type=int, default=32, help='batch size', required = True)
+    args = parser.parse_args()
+
+
+    system = args.system_key
+    flow_path = args.flows
+    lap_path = args.laplacian
+    k = args.number_atoms
+    n_epochs = args.epochs
+    lambda_reg = args.lambda_reg
+    gamma_reg = args.gamma_reg
+    alpha_steps = args.alpha_steps
+    d_steps = args.dict_steps
+    lr = args.learning_rate
+    batch_size = args.batch_size
+    regularization = args.regularization
+    smooth = args.smooth 
+
+
+    D, alpha, loss = train_dictionary_learning(flow_path, lap_path, 
+                                               k=k, 
+                                               n_epochs=n_epochs, 
+                                               lambda_reg=lambda_reg, 
+                                               gamma_reg=gamma_reg, 
+                                               alpha_steps=alpha_steps, 
+                                               d_steps=d_steps, 
+                                               lr=lr, 
+                                               batch_size=batch_size, 
+                                               regularization=regularization, 
+                                               smooth=smooth)
+
+    # directory to save the results
+    save_dir = f'results_{system}'
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    # save parameters
+    file_params = open(os.path.join(save_dir, 'params.txt'), 'w')
+    file_params.write(f"system: {system}\n")
+    file_params.write(f"flows: {flow_path}\n")
+    file_params.write(f"laplacian: {lap_path}\n")
+    file_params.write(f"number of atoms: {k}\n")
+    file_params.write(f"epochs: {n_epochs}\n")
+    file_params.write(f"regularization: {regularization}\n")
+    file_params.write(f"lambda: {lambda_reg}\n")
+    file_params.write(f"smoothness: {smooth}\n")
+    file_params.write(f"gamma: {gamma_reg}\n")
+    file_params.write(f"alpha steps: {alpha_steps}\n")
+    file_params.write(f"dictionary steps: {d_steps}\n")
+    file_params.write(f"learning rate: {lr}\n")
+    file_params.write(f"batch size: {batch_size}\n")
+    file_params.write(f"final loss: {loss[-1]}\n")
+    file_params.close()
+
+
+    np.save(os.path.join(save_dir, 'dictionary.npy'), D.cpu().numpy())
+    np.save(os.path.join(save_dir, 'weights.npy'), alpha.cpu().numpy())
+    np.save(os.path.join(save_dir, 'loss.npy'), np.array(loss))
+
+    print('Finished')
+    sys.stdout.flush()
