@@ -1,0 +1,14 @@
+system: experiment
+flows: synthetic_data/flows.npy
+laplacian: synthetic_data/laplacian.npy
+number of atoms: 10
+epochs: 50
+regularization: l1
+lambda: 0.5
+smoothness: True
+gamma: 0.01
+alpha steps: 50
+dictionary steps: 50
+learning rate: 0.01
+batch size: 3
+final loss: 23658.18736577034

@@ -152,13 +152,19 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
         sys.stdout.flush()
 
         alpha = optimize_alpha_batches(D, loader, T, k, lambda_reg, device, n_iter=alpha_steps, lr=lr)
-        D, loss = optimize_dictionary_batches(F, alpha, L, loader, gamma_reg, n_iter=d_steps, lr=lr)
+        D, loss = optimize_dictionary_batches(F, alpha, L, loader, gamma_reg, n_iter=d_steps, lr=lr, smooth=smooth)
+
 
         print(f"Loss: {loss:.4f}")
         sys.stdout.flush()
 
         loss_vector.append(loss)
         if loss < best_loss:
+            best_D = D
+            best_alpha = alpha
+            print(f'Best D and alpha updated in epoch {epoch+1}')
+            sys.stdout.flush()
+
             best_loss = loss
             patience = 10
         else:
@@ -171,14 +177,14 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
     print("Training finished")
     sys.stdout.flush()
 
-    return D, alpha, loss_vector
+    return best_D, best_alpha, loss_vector
 
 # ==============================
 # main
 # ==============================
 
 if __name__ == '__main__':
-    # python3 dict_arr_learning.py -system experiment -flows flows.npy -laplacian laplacian.npy -natoms 10 -ep 10 -reg l2 -lambda 0.01 -smooth True -gamma 0.1 -as 100 -ds 100 -lr 1e-2 -bs 32
+    # python3 dict_arr_learning.py -system experiment -flows flows.npy -lap laplacian.npy -natoms 10 -ep 10 -reg l2 -lambda 0.01 -smooth True -gamma 0.1 -as 100 -ds 100 -lr 1e-2 -bs 32
 
     parser = argparse.ArgumentParser(description='Dictionary Learning for Arrival Flows')
     parser.add_argument('-system', '--system_key', type=str, default='experiment', help='system of flows', required = True)
