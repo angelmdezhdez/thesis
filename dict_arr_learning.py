@@ -151,9 +151,15 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
         print(f"Epoch {epoch+1}/{n_epochs}")
         sys.stdout.flush()
 
-        alpha = optimize_alpha_batches(D, loader, T, k, lambda_reg, device, n_iter=alpha_steps, lr=lr)
+        alpha = optimize_alpha_batches(D, loader, T, k, lambda_reg, device, n_iter=alpha_steps, lr=lr, regularization=regularization)
         D, loss = optimize_dictionary_batches(F, alpha, L, loader, gamma_reg, n_iter=d_steps, lr=lr, smooth=smooth)
 
+        if regularization == 'l2':
+            loss += lambda_reg * torch.norm(alpha, p='fro')**2
+        elif regularization == 'l1':
+            loss += lambda_reg * alpha.abs().sum()
+        else:
+            loss += torch.tensor(0.0, device=device)
 
         print(f"Loss: {loss:.4f}")
         sys.stdout.flush()
@@ -184,7 +190,7 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
 # ==============================
 
 if __name__ == '__main__':
-    # python3 dict_arr_learning.py -system experiment -flows flows.npy -lap laplacian.npy -natoms 10 -ep 10 -reg l2 -lambda 0.01 -smooth True -gamma 0.1 -as 100 -ds 100 -lr 1e-2 -bs 32
+    # python3 dict_arr_learning.py -system experiment -flows flows.npy -lap laplacian.npy -natoms 10 -ep 10 -reg l2 -lambda 0.01 -smooth 1 -gamma 0.1 -as 100 -ds 100 -lr 1e-2 -bs 32
 
     parser = argparse.ArgumentParser(description='Dictionary Learning for Arrival Flows')
     parser.add_argument('-system', '--system_key', type=str, default='experiment', help='system of flows', required = True)
@@ -194,7 +200,7 @@ if __name__ == '__main__':
     parser.add_argument('-ep', '--epochs', type=int, default=10, help='Number of epochs', required = True)
     parser.add_argument('-reg', '--regularization', type=str, default='l2', help='which regularization', required = True)
     parser.add_argument('-lambda', '--lambda_reg', type=float, default=0.01, help='regularization parameter', required = True)
-    parser.add_argument('-smooth', '--smooth', type=bool, default=False, help='smoothness True/False', required = True)
+    parser.add_argument('-smooth', '--smooth', type=int, default=0, help='smoothness 1(True)/0(False)', required = True)
     parser.add_argument('-gamma', '--gamma_reg', type=float, default=0.1, help='smoothness regularization parameter', required = True)
     parser.add_argument('-as', '--alpha_steps', type=int, default=100, help='number of steps for alpha optimization', required = True)
     parser.add_argument('-ds', '--dict_steps', type=int, default=100, help='number of steps for dictionary optimization', required = True)
@@ -215,7 +221,37 @@ if __name__ == '__main__':
     lr = args.learning_rate
     batch_size = args.batch_size
     regularization = args.regularization
-    smooth = args.smooth 
+    smooth = bool(args.smooth)
+
+    print(f"System: {system}")
+    sys.stdout.flush()
+    print(f"Flows: {flow_path}")
+    sys.stdout.flush()
+    print(f"Laplacian: {lap_path}")
+    sys.stdout.flush()
+    print(f"Number of atoms: {k}")
+    sys.stdout.flush()
+    print(f"Epochs: {n_epochs}")
+    sys.stdout.flush()
+    print(f"Regularization: {regularization}")
+    sys.stdout.flush()
+    print(f"Lambda: {lambda_reg}")
+    sys.stdout.flush()
+    print(f"Smoothness: {smooth}")
+    sys.stdout.flush()
+    print(f"Gamma: {gamma_reg}")
+    sys.stdout.flush()
+    print(f"Alpha steps: {alpha_steps}")
+    sys.stdout.flush()
+    print(f"Dictionary steps: {d_steps}")
+    sys.stdout.flush()
+    print(f"Learning rate: {lr}")
+    sys.stdout.flush()
+    print(f"Batch size: {batch_size}\n\n")
+    sys.stdout.flush()
+
+    print('Starting training')
+    sys.stdout.flush()
 
 
     D, alpha, loss = train_dictionary_learning(flow_path, lap_path, 
