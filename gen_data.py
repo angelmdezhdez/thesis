@@ -1,36 +1,94 @@
 import numpy as np
-import networkx as nx
 from pathlib import Path
 
-# Parámetros
-n = 10      # número de nodos
-k = 3       # número de elementos base del diccionario
-T = 50      # número total de matrices de flujo
-base_count = 5  # número de matrices base
+n = 10 #nodos
+T = 25 # no de flujos por flujo base
 
-# Crear directorio
+adj_nodes = np.array([[0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
+                      [1, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 1, 0, 0, 1, 0, 1, 0, 0, 0],
+                      [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                      [0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+                      [1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                      [0, 0, 1, 0, 0, 1, 0, 0, 0, 1],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                      [0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+                      [0, 0, 0, 0, 0, 0, 1, 1, 1, 0]])
+
+L = np.diag(adj_nodes.sum(axis=1)) - adj_nodes 
+
+
+f1 = np.array([[5, 0, 0, 0, 0, 0, 5, 0, 0, 0],
+               [0, 6, 0, 6, 0, 0, 0, 0, 0, 0],
+               [0, 8, 7, 6, 0, 0, 9, 0, 0, 0],
+               [0, 0, 6, 0, 6, 0, 0, 0, 0, 0],
+               [0, 0, 5, 5, 6, 0, 0, 0, 0, 0],
+               [5, 0, 0, 0, 0, 5, 0, 0, 0, 0],
+               [0, 0, 9, 0, 0, 0, 0, 0, 0, 10],
+               [0, 0, 0, 0, 0, 0, 0, 5, 6, 0],
+               [0, 0, 0, 0, 0, 0, 5, 6, 5, 0],
+               [0, 0, 0, 0, 0, 0, 9, 6, 0, 5]])
+
+f2 = np.array([[0, 5, 0, 0, 0, 0, 0, 0, 0, 0],
+               [6, 6, 9, 0, 0, 6, 0, 0, 0, 0],
+               [0, 8, 8, 6, 7, 0, 9, 0, 0, 0],
+               [0, 0, 6, 0, 6, 0, 0, 0, 0, 0],
+               [0, 0, 5, 5, 6, 0, 0, 0, 0, 0],
+               [6, 6, 0, 0, 0, 5, 9, 0, 0, 0],
+               [0, 0, 9, 0, 0, 8, 9, 0, 0, 9],
+               [0, 0, 0, 0, 0, 0, 0, 0, 6, 7],
+               [0, 0, 0, 0, 0, 0, 0, 6, 5, 6],
+               [0, 0, 0, 0, 0, 0, 9, 6, 5, 5]])
+               
+f3 = np.array([[5, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 6, 6, 0, 0, 0, 0, 0, 0, 0],
+               [0, 5, 5, 0, 7, 0, 9, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 6, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 5, 6, 0, 0, 0],
+               [0, 0, 9, 0, 0, 7, 8, 0, 5, 6],
+               [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 6, 0, 5, 0],
+               [0, 0, 0, 0, 0, 0, 5, 0, 0, 0]])
+
+f4 = np.array([[5, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 6, 8, 0, 0, 0, 9, 0, 0, 0],
+               [0, 9, 5, 5, 7, 8, 9, 0, 0, 0],
+               [0, 0, 7, 5, 6, 0, 0, 0, 0, 0],
+               [0, 0, 6, 7, 0, 0, 0, 0, 0, 0],
+               [0, 0, 8, 0, 0, 5, 8, 0, 0, 0],
+               [0, 8, 8, 0, 0, 9, 8, 0, 6, 6],
+               [0, 0, 0, 0, 0, 0, 0, 6, 0, 0],
+               [0, 0, 0, 0, 0, 0, 5, 0, 5, 6],
+               [0, 0, 0, 0, 0, 0, 5, 0, 7, 5]])
+
 Path("synthetic_data").mkdir(exist_ok=True)
 
-# Matrices base normalizadas (simulan flujos de probabilidad)
 np.random.seed(0)
-base_flows = [np.random.rand(n, n) for _ in range(base_count)]
-base_flows = [bf / bf.sum() for bf in base_flows]
+base_flows = [f1, f2, f3, f4]
 
-# Generar flujos sintéticos
 flows = []
-for _ in range(T):
-    idx = np.random.choice(base_count)
-    noise = np.random.normal(scale=0.01, size=(n, n))
-    noisy_flow = base_flows[idx] + noise
-    noisy_flow[noisy_flow < 0] = 0
-    noisy_flow = noisy_flow / noisy_flow.sum()
-    flows.append(noisy_flow)
+labels = []
+for i, f in enumerate(base_flows):
+    for _ in range(T):
+        noise = np.random.randint(0, 3, size=(n, n))
+        noisy_flow = f + noise
+        noisy_flow = noisy_flow / noisy_flow.sum()
+        flows.append(noisy_flow)
+        labels.append(i)
 
-flows = np.stack(flows)  # (T, n, n)
+
+flows = np.array(flows)
+labels = np.array(labels)
+
+indexes = np.random.permutation(len(flows))
+
+flows = flows[indexes]
+labels = labels[indexes]
+
 np.save("synthetic_data/flows.npy", flows)
 
-# Grafo de adyacencia y Laplaciana
-G = nx.erdos_renyi_graph(n, p=0.4, seed=42)
-A = nx.to_numpy_array(G)
-L = np.diag(A.sum(axis=1)) - A  # Laplaciana no normalizada
 np.save("synthetic_data/laplacian.npy", L)
+
+print("Flujos sintéticos generados y guardados en 'synthetic_data/flows.npy'")
+print("Laplaciano guardado en 'synthetic_data/laplacian.npy'")
