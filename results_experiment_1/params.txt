@@ -1,4 +1,5 @@
 system: experiment_1
+number of nodes: 10
 flows: synthetic_data/flows.npy
 laplacian: synthetic_data/laplacian.npy
 number of atoms: 4
@@ -11,4 +12,4 @@ alpha steps: 50
 dictionary steps: 50
 learning rate: 0.001
 batch size: 20
-final loss: 46878.75
+final loss: 31903.892578125

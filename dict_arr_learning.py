@@ -98,7 +98,8 @@ def optimize_dictionary_batches(F, alpha, L, flow_loader, gamma_reg, n_iter=100,
 
         # acumulate gradients since we are using batch optimization
         # we need to accumulate the loss for each batch
-        total_loss_tensor = torch.tensor(0.0, device=device)
+        total_loss_tensor = 0.0#torch.tensor(0.0, device=device)
+        total_loss_rec = 0.0#torch.tensor(0.0, device=device)
 
         for batch, idx in flow_loader:
             batch = batch.to(device)
@@ -143,7 +144,7 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
 
     # early stop
     best_loss = float('inf')
-    patience = 10
+    patience = 15
 
     loss_vector = []
 
@@ -272,8 +273,11 @@ if __name__ == '__main__':
         os.makedirs(save_dir)
 
     # save parameters
+    D_s = D.cpu().numpy().shape
+
     file_params = open(os.path.join(save_dir, 'params.txt'), 'w')
     file_params.write(f"system: {system}\n")
+    file_params.write(f'number of nodes: {D_s[0]}\n')
     file_params.write(f"flows: {flow_path}\n")
     file_params.write(f"laplacian: {lap_path}\n")
     file_params.write(f"number of atoms: {k}\n")
