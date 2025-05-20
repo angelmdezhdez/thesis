@@ -28,7 +28,8 @@ for natoms, lam, gamma, smooth in product(natoms_list, lambda_list, gamma_list, 
         '-system', f'_{natoms}_{lam}_{gamma}_{smooth}',
         "-natoms", str(natoms),
         "-lambda", str(lam),
-        "-gamma", str(gamma)
+        "-gamma", str(gamma),
+        '-smooth', str(smooth)
     ]
     print("Ejecutando:", " ".join(cmd))
     subprocess.run(cmd)
