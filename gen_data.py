@@ -72,6 +72,7 @@ labels = []
 for i, f in enumerate(base_flows):
     for _ in range(T):
         noise = np.random.randint(0, 3, size=(n, n))
+        noise = noise * (np.random.rand(n, n) < 0.2)
         noisy_flow = f + noise
         noisy_flow = noisy_flow / noisy_flow.sum()
         flows.append(noisy_flow)
@@ -89,6 +90,8 @@ labels = labels[indexes]
 np.save("synthetic_data/flows.npy", flows)
 
 np.save("synthetic_data/laplacian.npy", L)
+
+np.save("synthetic_data/labels.npy", labels)
 
 print("Flujos sintéticos generados y guardados en 'synthetic_data/flows.npy'")
 print("Laplaciano guardado en 'synthetic_data/laplacian.npy'")
