@@ -1,5 +1,6 @@
 import subprocess
 from itertools import product
+import os
 
 # Parámetros a variar
 natoms_list = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40]
@@ -11,8 +12,8 @@ smooth_list = [0, 1]
 base_command = [
     "python3", "dict_arr_learning.py",
     "-system", "experiment",
-    "-flows", "flows.npy",
-    "-lap", "laplacian.npy",
+    "-flows", "synthetic_data/flows.npy",
+    "-lap", "synthetic_data/laplacian.npy",
     "-ep", "10",
     "-reg", "l2",
     "-as", "100",
@@ -31,3 +32,9 @@ for natoms, lam, gamma, smooth in product(natoms_list, lambda_list, gamma_list, 
     ]
     print("Ejecutando:", " ".join(cmd))
     subprocess.run(cmd)
+
+mensaje = "Terminé"
+canal = "My_Computer"
+
+comando = f'curl -d "{mensaje}" ntfy.sh/{canal}'
+os.system(comando)
