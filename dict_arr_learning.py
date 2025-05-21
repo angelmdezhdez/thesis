@@ -37,11 +37,54 @@ def load_data(flow_file, laplacian_file, device):
 # alpha optimization
 # ==============================
 
+#def optimize_alpha_batches(D, flow_loader, T, k, lambda_reg, device, n_iter=100, lr=1e-2, regularization = 'l2'):
+#    n = D.shape[0]
+#    # since we are using batch optimization, this global alpha will be updated by parts
+#    # so we dont need gradients for it
+#    alpha_global = torch.zeros(T, k, n, device=device)  
+#
+#    for _ in range(n_iter):
+#        for batch, idx in flow_loader:
+#            batch = batch.to(device)
+#            batch_size = batch.shape[0]
+#
+#            # batch_alpha is the alpha for the current batch (this one requires gradients)
+#            batch_alpha = torch.randn(batch_size, k, n, device=device, requires_grad=True)
+#            optimizer = torch.optim.Adam([batch_alpha], lr=lr)
+#
+#            # we give an only step to the optimizer
+#            optimizer.zero_grad()
+#            # D: dictionary (n, k), n is the number of nodes, k is the number of elements in the dictionary
+#            # batch_alpha: (B, k, n), where B is the batch size
+#            # recon: (B, n, n), batch: (B, n, n)
+#            recon = torch.matmul(D, batch_alpha) 
+#            # sum over the batch of frobenius norm squared 
+#            loss_rec = ((batch - recon) ** 2).sum()
+#            # regularization
+#            if regularization == 'l2':
+#                loss_sparse = lambda_reg * torch.norm(batch_alpha, p='fro')**2
+#            elif regularization == 'l1':
+#                loss_sparse = lambda_reg * batch_alpha.abs().sum()
+#            else:
+#                loss_sparse = torch.tensor(0.0, device=device)
+#            # total loss
+#            loss = (loss_rec / (2*T)) + (loss_sparse / T)
+#
+#            # optimization step
+#            loss.backward()
+#            optimizer.step()
+#
+#            # update the global alpha with the current batch_alpha
+#            alpha_global[idx] = batch_alpha.detach()
+#
+#    return alpha_global
+
 def optimize_alpha_batches(D, flow_loader, T, k, lambda_reg, device, n_iter=100, lr=1e-2, regularization = 'l2'):
     n = D.shape[0]
     # since we are using batch optimization, this global alpha will be updated by parts
     # so we dont need gradients for it
     alpha_global = torch.zeros(T, k, n, device=device)  
+    best_losses = torch.full((T,), float('inf'), device=device)
 
     for _ in range(n_iter):
         for batch, idx in flow_loader:
@@ -74,6 +117,24 @@ def optimize_alpha_batches(D, flow_loader, T, k, lambda_reg, device, n_iter=100,
             loss.backward()
             optimizer.step()
 
+            # final loss for the current batch without gradients
+            with torch.no_grad():
+                recon = torch.matmul(D, batch_alpha)
+                loss_rec_final = ((batch - recon) ** 2).sum(dim=(1, 2))  
+                if regularization == 'l2':
+                    loss_sparse_final = lambda_reg * (batch_alpha**2).sum(dim=(1,2))
+                elif regularization == 'l1':
+                    loss_sparse_final = lambda_reg * batch_alpha.abs().sum(dim=(1,2))
+                else:
+                    loss_sparse_final = torch.zeros(batch_size, device=device)
+
+                total_loss_final = (loss_rec_final / (2*T)) + (loss_sparse_final / T)
+                
+                for i, sample_idx in enumerate(idx):
+                    if total_loss_final[i] < best_losses[sample_idx]:
+                        best_losses[sample_idx] = total_loss_final[i]
+                        alpha_global[sample_idx] = batch_alpha[i].detach()
+
             # update the global alpha with the current batch_alpha
             alpha_global[idx] = batch_alpha.detach()
 
@@ -83,48 +144,97 @@ def optimize_alpha_batches(D, flow_loader, T, k, lambda_reg, device, n_iter=100,
 # dictionary optimization with cumulative gradients
 # ==============================
 
+#def optimize_dictionary_batches(F, alpha, L, flow_loader, gamma_reg, n_iter=100, lr=1e-2, smooth=True):
+#    T, n, _ = F.shape
+#    k = alpha.shape[1]
+#    device = F.device
+#
+#    # D: dictionary, it requires gradients
+#    D = torch.randn(n, k, device=device, requires_grad=True)
+#    optimizer = torch.optim.Adam([D], lr=lr)
+#
+#    for _ in range(n_iter):
+#        optimizer.zero_grad()
+#        total_loss_rec = 0.0
+#
+#        # acumulate gradients since we are using batch optimization
+#        # we need to accumulate the loss for each batch
+#        total_loss_tensor = 0.0#torch.tensor(0.0, device=device)
+#        total_loss_rec = 0.0#torch.tensor(0.0, device=device)
+#
+#        for batch, idx in flow_loader:
+#            batch = batch.to(device)
+#            # select the alpha for the current batch
+#            batch_alpha = alpha[idx]
+#            
+#            # reconstruction
+#            recon = torch.matmul(D, batch_alpha)  # (B, n, n)
+#            # loss reconstruction
+#            loss_rec = ((batch - recon) ** 2).sum()
+#            total_loss_tensor += loss_rec
+#            total_loss_rec += loss_rec.item()
+#        total_loss_rec /= (2 * T)
+#        
+#        # regularization over the spatial smoothness
+#        if smooth:
+#            loss_smooth = gamma_reg * torch.trace(D.T @ L @ D)
+#            total_loss_tensor += loss_smooth
+#        else:
+#            loss_smooth = torch.tensor(0.0, device=device)
+#
+#        total_loss_tensor.backward()
+#        optimizer.step()
+#
+#    return D.detach(), total_loss_rec + loss_smooth.item()
+
+
 def optimize_dictionary_batches(F, alpha, L, flow_loader, gamma_reg, n_iter=100, lr=1e-2, smooth=True):
     T, n, _ = F.shape
     k = alpha.shape[1]
     device = F.device
 
-    # D: dictionary, it requires gradients
     D = torch.randn(n, k, device=device, requires_grad=True)
     optimizer = torch.optim.Adam([D], lr=lr)
 
+    best_D = D.detach().clone()
+    best_loss = float('inf')
+
     for _ in range(n_iter):
         optimizer.zero_grad()
-        total_loss_rec = 0.0
 
-        # acumulate gradients since we are using batch optimization
-        # we need to accumulate the loss for each batch
-        total_loss_tensor = 0.0#torch.tensor(0.0, device=device)
-        total_loss_rec = 0.0#torch.tensor(0.0, device=device)
+        total_loss_tensor = 0.0
+        total_loss_rec = 0.0
 
         for batch, idx in flow_loader:
             batch = batch.to(device)
-            # select the alpha for the current batch
             batch_alpha = alpha[idx]
-            
-            # reconstruction
-            recon = torch.matmul(D, batch_alpha)  # (B, n, n)
-            # loss reconstruction
+
+            recon = torch.matmul(D, batch_alpha)
             loss_rec = ((batch - recon) ** 2).sum()
             total_loss_tensor += loss_rec
             total_loss_rec += loss_rec.item()
-            total_loss_rec /= (2 * T)
-        
-        # regularization over the spatial smoothness
+
+        total_loss_rec /= (2 * T)
+
+        # regularización por suavidad espacial
         if smooth:
             loss_smooth = gamma_reg * torch.trace(D.T @ L @ D)
             total_loss_tensor += loss_smooth
+            loss_smooth_val = loss_smooth.item()
         else:
-            loss_smooth = torch.tensor(0.0, device=device)
+            loss_smooth_val = 0.0
 
-        total_loss_tensor.backward()
-        optimizer.step()
+        total_loss = (total_loss_rec + loss_smooth_val)
 
-    return D.detach(), total_loss_rec + loss_smooth.item()
+        # Solo actualizamos si la pérdida es mejor que la anterior
+        if total_loss < best_loss:
+            total_loss_tensor.backward()
+            optimizer.step()
+            best_loss = total_loss
+            best_D = D.detach().clone()
+
+    return best_D, best_loss
+
 
 # ==============================
 # train 
@@ -140,8 +250,8 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
 
     dataset = FlowDataset(F)
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-
-    D = torch.randn(n, k, device=device)
+    torch.manual_seed(0)
+    D = torch.rand(n, k, device=device)
 
     # early stop
     best_loss = float('inf')

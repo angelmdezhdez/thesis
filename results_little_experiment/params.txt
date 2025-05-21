@@ -1,0 +1,15 @@
+system: little_experiment
+number of nodes: 4
+flows: synthetic_data/flows.npy
+laplacian: synthetic_data/laplacian.npy
+number of atoms: 3
+epochs: 25
+regularization: l2
+lambda: 1e-07
+smoothness: True
+gamma: 1e-07
+alpha steps: 10
+dictionary steps: 10
+learning rate: 1e-05
+batch size: 4
+final loss: 44.4239387512207
