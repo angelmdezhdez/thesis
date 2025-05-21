@@ -2,14 +2,14 @@ system: experiment
 number of nodes: 10
 flows: synthetic_data/flows.npy
 laplacian: synthetic_data/laplacian.npy
-number of atoms: 4
+number of atoms: 12
 epochs: 50
 regularization: l1
-lambda: 0.1
+lambda: 0.01
 smoothness: True
-gamma: 1.5
+gamma: 0.01
 alpha steps: 50
 dictionary steps: 50
 learning rate: 0.001
 batch size: 20
-final loss: 534.5126953125
+final loss: 234.9927978515625
