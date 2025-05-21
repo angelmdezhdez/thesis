@@ -68,7 +68,7 @@ def optimize_alpha_batches(D, flow_loader, T, k, lambda_reg, device, n_iter=100,
             else:
                 loss_sparse = torch.tensor(0.0, device=device)
             # total loss
-            loss = loss_rec + loss_sparse
+            loss = (loss_rec / (2*T)) + (loss_sparse / T)
 
             # optimization step
             loss.backward()
@@ -112,6 +112,7 @@ def optimize_dictionary_batches(F, alpha, L, flow_loader, gamma_reg, n_iter=100,
             loss_rec = ((batch - recon) ** 2).sum()
             total_loss_tensor += loss_rec
             total_loss_rec += loss_rec.item()
+            total_loss_rec /= (2 * T)
         
         # regularization over the spatial smoothness
         if smooth:
