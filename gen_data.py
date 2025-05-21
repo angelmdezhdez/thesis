@@ -93,5 +93,10 @@ np.save("synthetic_data/laplacian.npy", L)
 
 np.save("synthetic_data/labels.npy", labels)
 
+np.save('synthetic_data/f1.npy', f1/f1.sum())
+np.save('synthetic_data/f2.npy', f2/f2.sum())
+np.save('synthetic_data/f3.npy', f3/f3.sum())
+np.save('synthetic_data/f4.npy', f4/f4.sum())
+
 print("Flujos sintéticos generados y guardados en 'synthetic_data/flows.npy'")
 print("Laplaciano guardado en 'synthetic_data/laplacian.npy'")
