@@ -17,7 +17,9 @@ adj_nodes = np.array([[0, 1, 0, 1],
                       [0, 0, 0, 1],
                       [1, 1, 1, 0]])
 
-L = np.diag(adj_nodes.sum(axis=1)) - adj_nodes 
+D = np.diag(np.sum(adj_nodes, axis=1))
+
+L = np.eye(adj_nodes.shape[0]) - (np.linalg.inv(D))**0.5 @ adj_nodes @ np.linalg.inv(D)**0.5
 
 
 #f1 = np.array([[5, 0, 0, 0, 0, 0, 5, 0, 0, 0],
@@ -64,20 +66,20 @@ L = np.diag(adj_nodes.sum(axis=1)) - adj_nodes
 #               [0, 0, 0, 0, 0, 0, 5, 0, 5, 6],
 #               [0, 0, 0, 0, 0, 0, 5, 0, 7, 5]])
 
-f1 = np.array([[0, 0, 0, 0],
-               [0, 0, 0, 0],
+f1 = np.array([[9, 0, 0, 0],
+               [0, 10, 0, 0],
                [0, 0, 0, 8],
-               [0, 0, 0, 0]])
+               [0, 0, 8, 0]])
 
-f2 = np.array([[0, 0, 0, 0],
+f2 = np.array([[8, 0, 0, 0],
                [0, 0, 0, 9],
-               [0, 0, 0, 0],
-               [0, 0, 0, 0]])
+               [0, 0, 7, 0],
+               [0, 9, 0, 0]])
 
 f3 = np.array([[0, 0, 0, 10],
-               [0, 0, 0, 0],
-               [0, 0, 0, 0],
-               [0, 0, 0, 0]])
+               [0, 8, 0, 0],
+               [0, 0, 7, 0],
+               [9, 0, 0, 0]])
 
 n = adj_nodes.shape[0]
 T = 10 # no de flujos por flujo base
@@ -95,7 +97,9 @@ for i, f in enumerate(base_flows):
         noise = np.random.randint(0, 2, size=(n, n))
         noise = noise * (np.random.rand(n, n) < 0.2)
         noisy_flow = f + noise
-        noisy_flow = noisy_flow / noisy_flow.sum()
+        col_sums = noisy_flow.sum(axis=0, keepdims=True)
+        col_sums[col_sums == 0] = 1
+        noisy_flow = noisy_flow / col_sums
         flows.append(noisy_flow)
         labels.append(i)
 
@@ -114,10 +118,11 @@ np.save("synthetic_data/laplacian.npy", L)
 
 np.save("synthetic_data/labels.npy", labels)
 
-np.save('synthetic_data/f1.npy', f1/f1.sum())
-np.save('synthetic_data/f2.npy', f2/f2.sum())
-np.save('synthetic_data/f3.npy', f3/f3.sum())
-#np.save('synthetic_data/f4.npy', f4/f4.sum())
+for i, f in enumerate(base_flows):
+    col_sums = f.sum(axis=0, keepdims=True)
+    col_sums[col_sums == 0] = 1
+    f = f / col_sums
+    np.save(f'synthetic_data/f{i+1}.npy', f)
 
 print("Flujos sintéticos generados y guardados en 'synthetic_data/flows.npy'")
 print("Laplaciano guardado en 'synthetic_data/laplacian.npy'")
