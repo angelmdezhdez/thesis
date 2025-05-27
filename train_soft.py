@@ -152,7 +152,7 @@ def optimize_dictionary_batches(F, alpha, initial_D_params, L, flow_loader, gamm
 # train 
 # ==============================
 
-def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lambda_reg=0.01, gamma_reg=0.1, alpha_steps=100, d_steps=100, lr=1e-2, batch_size=32, regularization='l2', smooth=False):
+def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lambda_reg=0.01, gamma_reg=0.1, alpha_steps=100, d_steps=100, lr=1e-2, batch_size=32, regularization='l2', smooth=False, pat=15, tol=1e-4):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
     sys.stdout.flush()
@@ -169,7 +169,7 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
     alpha_params = torch.randn(T, k, n, device=device, requires_grad=True)
 
     best_loss = float('inf')
-    patience = 15
+    patience = pat
     loss_vector = []
     best_D = None
     best_alpha = None
@@ -217,14 +217,16 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
         sys.stdout.flush()
 
         loss_vector.append(loss)
+
         if loss < best_loss:
             best_D = D
             best_alpha = alpha
+            best_loss = loss
             print(f'Best D and alpha updated in epoch {epoch+1}')
             sys.stdout.flush()
-
-            best_loss = loss
-            patience = 10
+            
+        if abs(loss - best_loss) < tol:
+            patience = pat
         else:
             patience -= 1
             if patience == 0:
@@ -242,7 +244,7 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
 # ==============================
 
 if __name__ == '__main__':
-    # python3 train_soft.py -system little_experiment -flows synthetic_data/flows.npy -lap synthetic_data/laplacian.npy -natoms 4 -ep 1500 -reg l1 -lambda 0.001 -smooth 0 -gamma 0.001 -as 25 -ds 25 -lr 1e-4 -bs 4
+    # python3 train_soft.py -system little_experiment -flows synthetic_data/flows.npy -lap synthetic_data/laplacian.npy -natoms 4 -ep 1500 -reg l1 -lambda 0.001 -smooth 0 -gamma 0.001 -as 25 -ds 25 -lr 1e-4 -bs 4 -tol 1e-5 -pat 80
 
     parser = argparse.ArgumentParser(description='Dictionary Learning for Arrival Flows')
     parser.add_argument('-system', '--system_key', type=str, default='experiment', help='system of flows', required=True)
@@ -258,6 +260,8 @@ if __name__ == '__main__':
     parser.add_argument('-ds', '--dict_steps', type=int, default=100, help='number of steps for dictionary optimization', required=True)
     parser.add_argument('-lr', '--learning_rate', type=float, default=1e-2, help='learning rate', required=True)
     parser.add_argument('-bs', '--batch_size', type=int, default=32, help='batch size', required=True)
+    parser.add_argument('-tol', '--tolerance', type=float, default=1e-4, help='tolerance for early stopping', required=False)
+    parser.add_argument('-pat', '--patience', type=int, default=15, help='patience for early stopping', required=False)
     args = parser.parse_args()
 
     system = args.system_key
@@ -273,6 +277,8 @@ if __name__ == '__main__':
     batch_size = args.batch_size
     regularization = args.regularization
     smooth = bool(args.smooth)
+    tol = args.tolerance
+    patience = args.patience
 
     print(f"System: {system}")
     sys.stdout.flush()
@@ -298,7 +304,11 @@ if __name__ == '__main__':
     sys.stdout.flush()
     print(f"Learning rate: {lr}")
     sys.stdout.flush()
-    print(f"Batch size: {batch_size}\n\n")
+    print(f"Batch size: {batch_size}")
+    sys.stdout.flush()
+    print(f"Tolerance: {tol}")
+    sys.stdout.flush()
+    print(f"Patience: {patience}\n\n")
     sys.stdout.flush()
 
     print('Starting training')
@@ -315,7 +325,10 @@ if __name__ == '__main__':
                                              lr=lr, 
                                              batch_size=batch_size, 
                                              regularization=regularization, 
-                                             smooth=smooth)
+                                             smooth=smooth,
+                                             tol=tol,
+                                             pat=patience
+                                             )
     
     end = time.time()
     print(f'Training time: {end - start:.2f} seconds')
@@ -335,7 +348,8 @@ if __name__ == '__main__':
     file_params.write(f"flows: {flow_path}\n")
     file_params.write(f"laplacian: {lap_path}\n")
     file_params.write(f"number of atoms: {k}\n")
-    file_params.write(f"epochs: {n_epochs}\n")
+    file_params.write(f"total epochs: {n_epochs}\n")
+    file_params.write(f"number epochs that was required: {len(loss)}\n")
     file_params.write(f"regularization: {regularization}\n")
     file_params.write(f"lambda: {lambda_reg}\n")
     file_params.write(f"smoothness: {smooth}\n")

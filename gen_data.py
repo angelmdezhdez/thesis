@@ -107,9 +107,9 @@ base_flows = []
 for i in range(n_base):
     flow = np.zeros((n, n))
     cols = np.random.choice(Dict.shape[1], n, replace=True)
-    for j in cols:
+    for j, jj in enumerate(cols):
         for k in range(n):
-            flow[k, j] = Dict[i, j]
+            flow[k, j] = Dict[k, jj]
 
     base_flows.append(flow)
 
