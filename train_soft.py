@@ -8,7 +8,7 @@ import sys
 sys.stdout.flush()
 
 # ==============================
-# Personalized Dataset
+# Dataloader
 # ==============================
 
 class FlowDataset(Dataset):
@@ -23,7 +23,7 @@ class FlowDataset(Dataset):
         return self.F[idx], idx
 
 # ==============================
-# Utilities
+# extras
 # ==============================
 
 def load_data(flow_file, laplacian_file, device):
@@ -44,7 +44,6 @@ def softmax_transform(x, dim):
 
 def optimize_alpha_batches(D, initial_alpha_params, flow_loader, T, k, lambda_reg, device, n_iter=100, lr=1e-2, regularization='l2'):
     n = D.shape[0]
-    # Initialize alpha with given parameters or random if first epoch
     alpha_params = initial_alpha_params.clone().detach().requires_grad_(True)
     optimizer = torch.optim.Adam([alpha_params], lr=lr)
     
@@ -59,14 +58,14 @@ def optimize_alpha_batches(D, initial_alpha_params, flow_loader, T, k, lambda_re
             batch = batch.to(device)
             batch_size = batch.shape[0]
             
-            # Get softmax alpha for current batch
+            # use softmax function per rows
             batch_alpha = softmax_transform(alpha_params[idx], dim=1)
             
-            # Reconstruction
+            # reconstruction
             recon = torch.matmul(D, batch_alpha)
             loss_rec = ((batch - recon) ** 2).sum()
             
-            # Regularization
+            # regularization term
             if regularization == 'l2':
                 loss_sparse = lambda_reg * torch.norm(batch_alpha, p='fro')**2
             elif regularization == 'l1':
@@ -77,7 +76,7 @@ def optimize_alpha_batches(D, initial_alpha_params, flow_loader, T, k, lambda_re
             loss = (loss_rec / (2*T)) + (loss_sparse / T)
             total_loss += loss
             
-            # Store best alpha for each sample
+            # preserving best alpha
             with torch.no_grad():
                 sample_losses = ((batch - recon) ** 2).sum(dim=(1,2)) / (2*T)
                 if regularization == 'l2':
@@ -104,7 +103,6 @@ def optimize_dictionary_batches(F, alpha, initial_D_params, L, flow_loader, gamm
     k = alpha.shape[1]
     device = F.device
 
-    # Initialize dictionary with given parameters or random if first epoch
     D_params = initial_D_params.clone().detach().requires_grad_(True)
     optimizer = torch.optim.Adam([D_params], lr=lr)
 
@@ -114,7 +112,7 @@ def optimize_dictionary_batches(F, alpha, initial_D_params, L, flow_loader, gamm
     for _ in range(n_iter):
         optimizer.zero_grad()
         
-        # Get softmax dictionary
+        # use softmax function per columns
         D = softmax_transform(D_params, dim=0)
         
         total_loss_tensor = 0.0
@@ -131,7 +129,7 @@ def optimize_dictionary_batches(F, alpha, initial_D_params, L, flow_loader, gamm
 
         total_loss_rec /= (2 * T)
 
-        # Spatial smoothness regularization
+        # spatial smoothness regularization
         if smooth:
             loss_smooth = gamma_reg * torch.trace(D.T @ L @ D)
             total_loss_tensor += loss_smooth
@@ -141,7 +139,7 @@ def optimize_dictionary_batches(F, alpha, initial_D_params, L, flow_loader, gamm
 
         total_loss = (total_loss_rec + loss_smooth_val)
 
-        # Update if loss improves
+        # only update if the loss is better than the best loss
         if total_loss < best_loss:
             total_loss_tensor.backward()
             optimizer.step()
@@ -165,7 +163,7 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
     dataset = FlowDataset(F)
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     
-    # Initialize parameters only once at the beginning
+    # initialization
     torch.manual_seed(0)
     D_params = torch.randn(n, k, device=device, requires_grad=True)
     alpha_params = torch.randn(T, k, n, device=device, requires_grad=True)
@@ -180,10 +178,10 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
         print(f"Epoch {epoch+1}/{n_epochs}")
         sys.stdout.flush()
 
-        # Get current D from parameters
+        # current D
         current_D = softmax_transform(D_params.detach(), dim=0)
         
-        # Optimize alpha using current parameters
+        # alpha optimization
         alpha, alpha_params = optimize_alpha_batches(
             current_D, 
             alpha_params, 
@@ -195,7 +193,7 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
             regularization=regularization
         )
 
-        # Optimize dictionary using current parameters
+        # dictionary optimization
         D, D_params, loss = optimize_dictionary_batches(
             F, 
             alpha, 
@@ -244,6 +242,8 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
 # ==============================
 
 if __name__ == '__main__':
+    # python3 train_soft.py -system little_experiment -flows synthetic_data/flows.npy -lap synthetic_data/laplacian.npy -natoms 4 -ep 1500 -reg l1 -lambda 0.001 -smooth 0 -gamma 0.001 -as 25 -ds 25 -lr 1e-4 -bs 4
+
     parser = argparse.ArgumentParser(description='Dictionary Learning for Arrival Flows')
     parser.add_argument('-system', '--system_key', type=str, default='experiment', help='system of flows', required=True)
     parser.add_argument('-flows', '--flows', type=str, default='flows.npy', help='Path to the flow tensor file', required=True)

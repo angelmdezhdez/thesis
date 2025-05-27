@@ -1,0 +1,17 @@
+system: little_experiment_ep2500_as30_ds30_regl2_smooth1_lambda0.001_gamma0.001
+number of nodes: 4
+flows: synthetic_data/flows.npy
+laplacian: synthetic_data/laplacian.npy
+number of atoms: 5
+epochs: 2500
+regularization: l2
+lambda: 0.001
+smoothness: True
+gamma: 0.001
+alpha steps: 30
+dictionary steps: 30
+learning rate: 0.0001
+batch size: 4
+final loss: 0.10416557639837265
+final time: 255.24 seconds
+mean time per epoch: 0.10 seconds
