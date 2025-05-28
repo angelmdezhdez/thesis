@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import Dataset, DataLoader
 import argparse
@@ -366,6 +367,14 @@ if __name__ == '__main__':
     np.save(os.path.join(save_dir, 'dictionary.npy'), D.cpu().numpy())
     np.save(os.path.join(save_dir, 'weights.npy'), alpha.cpu().numpy())
     np.save(os.path.join(save_dir, 'loss.npy'), np.array(loss))
+
+    plt.plot(loss)
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title('Loss over epochs')
+    plt.grid()
+    plt.savefig(os.path.join(save_dir, 'loss_plot.png'))
+    plt.close()
 
     print('Finished')
     sys.stdout.flush()
