@@ -118,7 +118,7 @@ labels = []
 for i, f in enumerate(base_flows):
     for _ in range(T):
         noise = np.random.rand(n, n) * noise_level
-        noise = noise * (np.random.rand(n, n) < noise_level/10)
+        noise = noise * (np.random.rand(n, n) < noise_level)
         noisy_flow = f + noise
         col_sums = noisy_flow.sum(axis=0, keepdims=True)
         col_sums[col_sums == 0] = 1
