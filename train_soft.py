@@ -165,7 +165,10 @@ def train_dictionary_learning(flow_file, laplacian_file, k=10, n_epochs=10, lamb
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     
     # initialization
-    torch.manual_seed(0)
+    s = 10
+    torch.manual_seed(s)
+    print(f"Random seed: {s}")
+    sys.stdout.flush()
     D_params = torch.randn(n, k, device=device, requires_grad=True)
     alpha_params = torch.randn(T, k, n, device=device, requires_grad=True)
 
@@ -362,6 +365,8 @@ if __name__ == '__main__':
     file_params.write(f"final loss: {loss[-1]}\n")
     file_params.write(f"final time: {end - start:.2f} seconds\n")
     file_params.write(f"mean time per epoch: {(end - start) / n_epochs:.2f} seconds\n")
+    file_params.write(f"tolerance: {tol}\n")
+    file_params.write(f"patience: {patience}\n")
     file_params.close()
 
     np.save(os.path.join(save_dir, 'dictionary.npy'), D.cpu().numpy())
