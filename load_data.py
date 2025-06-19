@@ -35,8 +35,8 @@ def load_data(name, flag_dir = True):
         if name[-3:] == 'csv':
             try: 
                 data = pd.read_csv(dir + name)
-            except:
-                print('Error loading csv file')
+            except Exception as e:
+                print(f'Error loading csv file: {e}')
                 sys.exit()
         elif name[-3:] == 'npy':
             try:
