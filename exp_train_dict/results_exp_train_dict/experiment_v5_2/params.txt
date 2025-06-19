@@ -1,0 +1,21 @@
+system: exp_train_dict/experiment_v5_2
+number of nodes: 10
+flows: exp_train_dict/synthetic_data_v5/flows.npy
+laplacian: exp_train_dict/synthetic_data_v5/laplacian.npy
+number of atoms: 9
+total epochs: 800
+number epochs that was required: 800
+regularization: l1
+lambda: 0.0001
+smoothness: True
+gamma: 1e-05
+alpha steps: 45
+dictionary steps: 25
+learning rate: 0.0001
+batch size: 128
+final loss: 0.09389374405145645
+best loss: 0.09389296174049377
+final time: 7.37 minutes
+mean time per epoch: 0.55 seconds
+tolerance: 1e-05
+patience: 150
