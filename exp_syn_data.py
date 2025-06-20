@@ -8,11 +8,14 @@ if __name__ == "__main__":
     args.add_argument('-I', '--Index', type=int, default=-1, help='index of the flow to visualize')
     args = args.parse_args()
 
-    dir = 'exp_train_dict/synthetic_data_v5/'
-    dir_exp = 'exp_train_dict/results_exp_train_dict/experiment_v5_7/'
+    #dir = 'exp_train_dict/synthetic_data_v5/'
+    dir = 'exp_train_dict/mibici_dataset_4/'
+    #dir_exp = 'exp_train_dict/results_exp_train_dict/experiment_v5_7/'
+    dir_exp = 'exp_train_dict/results_exp_train_dict/experiment_mibici_6/'
 
-    s_flows = np.load(dir + 'flows.npy')
-    s_dict = np.load(dir + 'dictionary.npy')
+    s_flows = np.load(dir + 'flows_train.npy')
+    #s_dict = np.load(dir + 'dictionary.npy')
+    s_dict = np.load(dir + 'laplacian_mibici_4.npy')
 
     learned_dict = np.load(dir_exp + 'dictionary.npy')
     learned_weights = np.load(dir_exp + 'weights.npy')
@@ -50,7 +53,8 @@ if __name__ == "__main__":
     plt.yticks([])
     plt.subplot(2, 2, 3)
     plt.imshow(s_dict, cmap='viridis', interpolation='nearest')
-    plt.title('Dictionary')
+    #plt.title('Dictionary')
+    plt.title('Laplacian')
     plt.colorbar()
     plt.xticks([])
     plt.yticks([])
