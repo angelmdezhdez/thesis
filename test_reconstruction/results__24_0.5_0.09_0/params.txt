@@ -1,0 +1,15 @@
+system: _24_0.5_0.09_0
+number of nodes: 10
+flows: synthetic_data/flows.npy
+laplacian: synthetic_data/laplacian.npy
+number of atoms: 24
+epochs: 50
+regularization: l2
+lambda: 0.5
+smoothness: False
+gamma: 0.09
+alpha steps: 100
+dictionary steps: 100
+learning rate: 0.001
+batch size: 10
+final loss: 202586.359375

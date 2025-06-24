@@ -32,6 +32,7 @@ def count_trips_mibici(data_user):
 def encontrar_estacion(est, matriz):
     for i in range(len(matriz)):
         if matriz[i][0] == est:
+            #(lat, long)
             return matriz[i][1], matriz[i][2]
     return None, None
 

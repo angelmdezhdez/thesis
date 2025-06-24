@@ -1,0 +1,20 @@
+system: mibici_experiment_natoms10_ep5000_as30_ds40_regNone_smooth1_lambda0.01_gamma0.01
+number of nodes: 10
+flows: data_mibici_2018_4/flows.npy
+laplacian: data_mibici_2018_4/laplacian.npy
+number of atoms: 10
+total epochs: 5000
+number epochs that was required: 2740
+regularization: None
+lambda: 0.01
+smoothness: True
+gamma: 0.01
+alpha steps: 30
+dictionary steps: 40
+learning rate: 0.0001
+batch size: 12
+final loss: 0.06357352435588837
+final time: 2081.65 seconds
+mean time per epoch: 0.42 seconds
+tolerance: 1e-05
+patience: 50

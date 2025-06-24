@@ -1,0 +1,20 @@
+system: little_experiment_no_opt
+number of nodes: 4
+flows: synthetic_data/flows.npy
+laplacian: synthetic_data/laplacian.npy
+number of atoms: 4
+total epochs: 2500
+number epochs that was required: 2500
+regularization: l1
+lambda: 0.001
+smoothness: False
+gamma: 0.001
+alpha steps: 35
+dictionary steps: 35
+learning rate: 0.0001
+batch size: 4
+final loss: 0.12000007927417755
+final time: 348.64 seconds
+mean time per epoch: 0.14 seconds
+tolerance: 1e-05
+patience: 20

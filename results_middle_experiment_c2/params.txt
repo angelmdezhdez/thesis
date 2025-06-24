@@ -1,0 +1,20 @@
+system: middle_experiment_c2
+number of nodes: 10
+flows: synthetic_data2/flows.npy
+laplacian: synthetic_data2/laplacian.npy
+number of atoms: 11
+total epochs: 4500
+number epochs that was required: 2618
+regularization: None
+lambda: 0.001
+smoothness: True
+gamma: 0.01
+alpha steps: 30
+dictionary steps: 30
+learning rate: 0.0001
+batch size: 12
+final loss: 0.07130499184131622
+final time: 554.68 seconds
+mean time per epoch: 0.12 seconds
+tolerance: 1e-05
+patience: 50
