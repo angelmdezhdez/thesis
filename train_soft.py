@@ -386,3 +386,5 @@ if __name__ == '__main__':
 
     print('Finished')
     sys.stdout.flush()
+
+    os.system(f'curl -d "Finishing training with {system}" ntfy.sh/aamh_091099_ntfy')
