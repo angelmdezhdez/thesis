@@ -1,0 +1,20 @@
+system: middle_experiment
+number of nodes: 10
+flows: data_mibici_2018_4/flows.npy
+laplacian: data_mibici_2018_4/laplacian.npy
+number of atoms: 10
+total epochs: 200
+number epochs that was required: 200
+regularization: None
+lambda: 0.001
+smoothness: True
+gamma: 0.001
+alpha steps: 15
+dictionary steps: 15
+learning rate: 0.0001
+batch size: 10
+final loss: 1.3757354021072388
+final time: 76.10 seconds
+mean time per epoch: 0.38 seconds
+tolerance: 0.001
+patience: 10

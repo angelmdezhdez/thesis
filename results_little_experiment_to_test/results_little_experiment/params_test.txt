@@ -1,0 +1,8 @@
+system: little_experiment
+flows: synthetic_data/flows.npy
+number epochs that was required: 1
+alpha steps: 37000
+learning rate: 0.0001
+batch size: 4
+Mean loss: 0.000
+final time: 1.57 minutes
