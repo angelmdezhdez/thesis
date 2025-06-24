@@ -13,7 +13,7 @@ if __name__ == "__main__":
     #dir_exp = 'exp_train_dict/results_exp_train_dict/experiment_v5_3/'
     dir_exp = 'exp_train_dict/results_exp_train_dict/experiment_mibici_1/'
 
-    s_flows = np.load(dir + 'flows_train.npy')
+    s_flows = np.load(dir + 'flows_test.npy')
     #s_flows = np.load(dir + 'flows.npy')
     print('Shape of synthetic flows:', s_flows.shape)
     #s_dict = np.load(dir + 'dictionary.npy')
@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     learned_dict = np.load(dir_exp + 'dictionary.npy')
     print('Shape of learned dictionary:', learned_dict.shape)
-    learned_weights = np.load(dir_exp + 'weights.npy')
+    learned_weights = np.load(dir_exp + 'weights_test.npy')
 
     index = args.Index
 

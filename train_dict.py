@@ -385,7 +385,7 @@ if __name__ == '__main__':
     file_params.close()
 
     np.save(os.path.join(save_dir, 'dictionary.npy'), D.cpu().numpy())
-    np.save(os.path.join(save_dir, 'weights.npy'), alpha.cpu().numpy())
+    np.save(os.path.join(save_dir, 'weights_train.npy'), alpha.cpu().numpy())
     np.save(os.path.join(save_dir, 'loss.npy'), np.array(loss))
 
     plt.plot(loss)
@@ -400,4 +400,4 @@ if __name__ == '__main__':
     sys.stdout.flush()
 
 
-os.system('curl -d "Terminé de entrenar" ntfy.sh/aamh_091099_ntfy')
+os.system(f'curl -d "Finishing training with {system}" ntfy.sh/aamh_091099_ntfy')
