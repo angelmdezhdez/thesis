@@ -1,0 +1,21 @@
+system: mibici_experiment_331
+number of nodes: 12
+flows: mibici_flows_dataset_4_split80/flows_train.npy
+laplacian: mibici_flows_dataset_4_split80/laplacian.npy
+number of atoms: 20
+total epochs: 3000
+number epochs that was required: 3000
+regularization: l1
+lambda: 0.001
+smoothness: True
+gamma: 1e-05
+alpha steps: 40
+dictionary steps: 25
+learning rate: 0.0001
+batch size: 73
+final loss: 1.163640022277832
+best loss: 1.163640022277832
+final time: 70.12 minutes
+mean time per epoch: 1.40 seconds
+tolerance: 1e-05
+patience: 200

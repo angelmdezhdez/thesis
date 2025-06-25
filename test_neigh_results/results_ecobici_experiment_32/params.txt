@@ -1,0 +1,21 @@
+system: ecobici_experiment_32
+number of nodes: 15
+flows: ecobici_flows_dataset_3_split80/flows_train.npy
+laplacian: ecobici_flows_dataset_3_split80/laplacian.npy
+number of atoms: 10
+total epochs: 3000
+number epochs that was required: 451
+regularization: l1
+lambda: 0.0001
+smoothness: True
+gamma: 5e-05
+alpha steps: 40
+dictionary steps: 25
+learning rate: 0.0001
+batch size: 73
+final loss: 0.24063993990421295
+best loss: 0.21214331686496735
+final time: 11.30 minutes
+mean time per epoch: 1.50 seconds
+tolerance: 1e-05
+patience: 200
