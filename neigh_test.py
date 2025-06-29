@@ -13,8 +13,8 @@ def mean_distance(flows_w: np.ndarray, laplacian: np.ndarray) -> float:
     return np.mean(distances)
 
 if system == 'ecobici':
-    #index_dir = [30, 174, 228, 300, 420, 666]
-    index_dir = [174]
+    index_dir = [30, 174, 228, 300, 420, 666]
+    #index_dir = [174]
     laplacian = np.load(f'test_neigh_results/lap_eco1.npy')
 else:
     index_dir = [6, 132, 234, 330, 426, 570, 642]
@@ -36,7 +36,7 @@ for i, index in enumerate(index_dir):
 
 plt.xlabel(r'$\gamma$')
 plt.ylabel('Mean Distance')
-plt.title(fr'Mean Distance vs $\gamma$ ({n_nodes} nodes)')
+plt.title(fr'Mean Distance vs $\gamma$ ({n_nodes} nodes) ({system})')
 plt.legend()
 plt.grid()
 plt.show()
