@@ -1,0 +1,8 @@
+System: mibici
+Flows path: data_mibici_2018_4/flows.npy
+Directory: spk_kmeans
+Flows shape: (20, 10, 10)
+Number of clusters: 4
+Max iterations: 100
+Initial centroids random: True
+Silhouette score: 0.21341017930576484
