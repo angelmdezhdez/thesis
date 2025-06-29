@@ -2,7 +2,17 @@ System: mibici
 Flows path: data_mibici_2018_4/flows.npy
 Directory: spk_kmeans
 Flows shape: (20, 10, 10)
-Number of clusters: 4
+Number of clusters: [2, 3, 5, 7, 9]
 Max iterations: 100
 Initial centroids random: True
-Silhouette score: 0.21341017930576484
+Risk for k=2: 112.073518899193
+Silhouette score for k=2: 0.404414373664444
+Risk for k=3: 75.59710125033234
+Silhouette score for k=3: 0.4926262117858354
+Risk for k=5: 69.44459175079828
+Silhouette score for k=5: 0.1242955960368954
+Risk for k=7: 39.672538471468215
+Silhouette score for k=7: 0.298976485656585
+Risk for k=9: 33.44700909619132
+Silhouette score for k=9: 0.3763520108081782
+Total time: 0.05 seconds
