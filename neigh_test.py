@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-gamma_values = [0.0, 1e-5, 5e-5, 0.0001, 0.0005, 0.001]
-system = 'mibici'
+gamma_values = [0.0, 0.00001, 0.00005, 0.0001, 0.0005, 0.001, 0.005]
+system = 'ecobici'
 
 def mean_distance(flows_w: np.ndarray, laplacian: np.ndarray) -> float:
     '''Calculate the mean distance between flow vectors and their neighbors.'''
@@ -13,8 +13,8 @@ def mean_distance(flows_w: np.ndarray, laplacian: np.ndarray) -> float:
     return np.mean(distances)
 
 if system == 'ecobici':
-    index_dir = [30, 174, 228, 300, 420, 666]
-    #index_dir = [174]
+    #index_dir = [49, 105, 161, 217, 273]
+    index_dir = [273]
     laplacian = np.load(f'test_neigh_results/lap_eco1.npy')
 else:
     index_dir = [6, 132, 234, 330, 426, 570, 642]
@@ -35,6 +35,7 @@ for i, index in enumerate(index_dir):
     plt.plot(gamma_values, dist, marker='o', label=f'Natoms: {natoms}')
 
 plt.xlabel(r'$\gamma$')
+plt.xscale('log')
 plt.ylabel('Mean Distance')
 plt.title(fr'Mean Distance vs $\gamma$ ({n_nodes} nodes) ({system})')
 plt.legend()

@@ -41,10 +41,10 @@ def floyd_warshall(AdjMatrix):
 def dirac_kernel(a, b):
     return np.asarray(a) == np.asarray(b)
     
-def gaussian_kernel_ecobici(a,b, sigma = 0.1429):
+def gaussian_kernel_ecobici(a,b, sigma = 0.02763): # true sigma = 4.254309943206953
     return np.exp(-((a-b)**2)*sigma)
 
-def gaussian_kernel_mibici(a,b, sigma = 0.1632):
+def gaussian_kernel_mibici(a,b, sigma = 0.01758): # true sigma = 5.3333621165780745
     return np.exp(-((a-b)**2)*sigma)
 
 #############################################################################
@@ -59,19 +59,46 @@ def index_gen(n):
 
 
 # task for parallel processing
+#def task1(args):
+#    index, S1, S2, fnc = args
+#    i, j = index
+#    if not np.isfinite(S1[i, j]):
+#        return 0  # Skip if the value is not finite
+#    
+#    # Precompute valid elements in S2
+#    valid_mask = np.isfinite(S2)
+#    valid_S2 = S2[valid_mask]
+#
+#    # Vectorized computation
+#    s = np.sum(fnc(S1[i, j], valid_S2) * dirac_kernel(i, np.arange(len(S2)))[:, None] * dirac_kernel(j, np.arange(len(S2))))
+#    return s
+
 def task1(args):
     index, S1, S2, fnc = args
     i, j = index
     if not np.isfinite(S1[i, j]):
-        return 0  # Skip if the value is not finite
-    
-    # Precompute valid elements in S2
-    valid_mask = np.isfinite(S2)
-    valid_S2 = S2[valid_mask]
+        return 0
 
-    # Vectorized computation
-    s = np.sum(fnc(S1[i, j], valid_S2))
-    return s
+    valid_mask = np.isfinite(S2)
+    valid_indices = np.argwhere(valid_mask)  # posiciones [(k, l), ...]
+
+    if valid_indices.size == 0:
+        return 0
+
+    k_vals = valid_indices[:, 0]
+    l_vals = valid_indices[:, 1]
+
+    s2_vals = S2[k_vals, l_vals]
+
+    kernel_vals = fnc(S1[i, j], s2_vals)
+
+    dirac_i = dirac_kernel(i, k_vals)  # shape (n_valid,)
+    dirac_j = dirac_kernel(j, l_vals)  # shape (n_valid,)
+    dirac_mask = dirac_i & dirac_j     # element-wise
+
+    result = np.sum(kernel_vals * dirac_mask)
+    return result
+
 
 def task2(args):
     index, S1, S2, fnc = args
@@ -82,7 +109,7 @@ def task2(args):
         for k in range(n):
             for l in range(n):
                 if np.isfinite(S2[k, l]):
-                    s += fnc(S1[i, j], S2[k, l])
+                    s += fnc(S1[i, j], S2[k, l]) * dirac_kernel(i, k) * dirac_kernel(j, l)
         return s
     else:
         return 0
