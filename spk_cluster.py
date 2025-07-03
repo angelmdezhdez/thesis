@@ -221,14 +221,16 @@ def kernel_kmeans(S, ks, max_iter=100, kernel_func=None, initial_centroids_rando
     if K_matrix is None:
         print('Computing kernel matrix...')
         sys.stdout.flush()
-        K = np.zeros((n_samples, n_samples))
+        K_ = np.zeros((n_samples, n_samples))
         for i in range(n_samples):
             for j in range(i, n_samples):
-                K[i, j] = kernel_func(S[i], S[j])
-                K[j, i] = K[i, j]
+                K_[i, j] = kernel_func(S[i], S[j])
+                K_[j, i] = K_[i, j]
     else:
         print('Kernel matrix was given!')
-        K = K_matrix
+        K_ = K_matrix
+
+    K = K_ / np.sqrt(np.outer(np.diag(K_), np.diag(K_)))  
 
     centroids_list = []
     labels_list = []
@@ -294,11 +296,13 @@ def kernel_kmeans(S, ks, max_iter=100, kernel_func=None, initial_centroids_rando
         risk = 0.0
         for j in range(k):
             cluster_idx = np.where(labels == j)[0]
-            if len(cluster_idx) == 0:
+            n_c = len(cluster_idx)
+            if n_c == 0:
                 continue
-            K_diag_sum = np.sum(diag_K[cluster_idx])
-            K_cluster_sum = np.sum(K[np.ix_(cluster_idx, cluster_idx)])
-            risk += K_diag_sum - (1.0 / len(cluster_idx)) * K_cluster_sum
+            K_diag = diag_K[cluster_idx]
+            K_cluster = K[np.ix_(cluster_idx, cluster_idx)]
+            K_ic = np.sum(K[cluster_idx], axis=1)
+            risk += np.sum(K_diag) - (2.0 / n_c) * np.sum(K_ic) + (1.0 / (n_c**2)) * np.sum(K_cluster)
 
         risk_list.append(risk)
 
@@ -307,7 +311,7 @@ def kernel_kmeans(S, ks, max_iter=100, kernel_func=None, initial_centroids_rando
         centroids_list.append(centroids)
         labels_list.append(labels)
 
-    return labels_list, centroids_list, K, risk_list
+    return labels_list, centroids_list, K_, risk_list
 
 
 ################################################################################
@@ -458,4 +462,4 @@ if __name__ == "__main__":
     print('Results saved in:', directory)
     sys.stdout.flush()
 
-    #os.system(f'curl -d "Finishing kernel KMeans clustering with {system}" ntfy.sh/aamh_091099_ntfy')
+    os.system(f'curl -d "Finishing kernel KMeans clustering with {system}" ntfy.sh/aamh_091099_ntfy')

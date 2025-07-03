@@ -1,0 +1,14 @@
+System: mibici
+Flows path: /Users/antoniomendez/Desktop/Tesis/thesis/vector_files/2024_fss_jan_apr/flows.npy
+Directory: spk_kmeans/test_4
+Flows shape: (8, 90, 90)
+Number of clusters: [2, 3, 4]
+Max iterations: 10
+Initial centroids random: False
+Risk for k=2: -13.955412191853915
+Silhouette score for k=2: 0.32434504407103887
+Risk for k=3: -25.407374974570963
+Silhouette score for k=3: 0.24599442926850082
+Risk for k=4: -36.75980980412044
+Silhouette score for k=4: 0.25678665093315917
+Total time: 48.55 seconds

@@ -1,0 +1,40 @@
+System: mibici
+Flows path: vector_files/2024_saturdays_jan_apr/flows.npy
+Directory: spk_kmeans/test_1
+Flows shape: (17, 90, 90)
+Number of clusters: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+Max iterations: 100
+Initial centroids random: False
+Risk for k=2: 22612.808653999462
+Silhouette score for k=2: 0.23954504170736446
+Risk for k=3: 21273.521579968987
+Silhouette score for k=3: 0.06272575857935003
+Risk for k=4: 16123.99556463628
+Silhouette score for k=4: 0.22376849159903614
+Risk for k=5: 15246.54892947302
+Silhouette score for k=5: 0.09885208806967598
+Risk for k=6: 14636.507730951389
+Silhouette score for k=6: 0.12588763969669353
+Risk for k=7: 15937.194918996
+Silhouette score for k=7: 0.004308605737424832
+Risk for k=8: 10805.341821109458
+Silhouette score for k=8: 0.17657049372116038
+Risk for k=9: 9073.930077235216
+Silhouette score for k=9: 0.3284761126619758
+Risk for k=10: 7656.7382899663935
+Silhouette score for k=10: 0.23783621857493623
+Risk for k=11: 5966.499779538353
+Silhouette score for k=11: 0.49607288716780157
+Risk for k=12: 5865.352939283641
+Silhouette score for k=12: 0.469103935170834
+Risk for k=13: 5296.15446950435
+Silhouette score for k=13: 0.5904666094034777
+Risk for k=14: 3025.380022151181
+Silhouette score for k=14: 0.6601837788296075
+Risk for k=15: 1572.5634285784
+Silhouette score for k=15: 0.8235485625331374
+Risk for k=16: 1129.146020419521
+Silhouette score for k=16: 0.8802781141012797
+Risk for k=17: 0.0
+Silhouette score for k=17: 1.0
+Total time: 205.13 seconds
