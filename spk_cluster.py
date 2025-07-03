@@ -41,10 +41,10 @@ def floyd_warshall(AdjMatrix):
 def dirac_kernel(a, b):
     return np.asarray(a) == np.asarray(b)
     
-def gaussian_kernel_ecobici(a,b, sigma = 0.02763): # true sigma = 4.254309943206953
+def gaussian_kernel_ecobici(a,b, sigma = 0.05516): # true sigma = 3.010661068145328
     return np.exp(-((a-b)**2)*sigma)
 
-def gaussian_kernel_mibici(a,b, sigma = 0.01758): # true sigma = 5.3333621165780745
+def gaussian_kernel_mibici(a,b, sigma = 0.02375): # true sigma = 4.587915301043796
     return np.exp(-((a-b)**2)*sigma)
 
 #############################################################################
@@ -56,7 +56,6 @@ def index_gen(n):
     for i in range(n):
         for j in range(n):
             yield i, j
-
 
 # task for parallel processing
 #def task1(args):
@@ -144,75 +143,172 @@ def sp_kernel(S1, S2, ker_func = None):
 # Kernel K-means
 ###############################################################################
 
+#def kernel_kmeans(S, ks, max_iter=100, kernel_func=None, initial_centroids_random=False, K_matrix=None):
+#    n_samples = S.shape[0]
+#    np.random.seed(0)  # For reproducibility
+#    if K_matrix is None:
+#        print('Computing kernel matrix...')
+#        sys.stdout.flush()
+#        K = np.zeros((n_samples, n_samples))
+#        for i in range(n_samples):
+#            for j in range(i, n_samples):
+#                print(f'\rProcessing kernel matrix: {i+1} of {n_samples}, {j+1} of {n_samples}', end='')
+#                sys.stdout.flush()
+#                K[i, j] = kernel_func(S[i], S[j])
+#                K[j, i] = K[i, j]
+#    else:
+#        print('Kernel matrix was given!')
+#        sys.stdout.flush()
+#        K=K_matrix
+#    centroids_list = []
+#    labels_list = []
+#    risk_list = []
+#    for k in ks:
+#        if initial_centroids_random:
+#            centroids = np.random.rand(k, S.shape[1], S.shape[2])
+#        else:
+#            indexes = np.random.choice(n_samples, k, replace=False)
+#            centroids = S[indexes]
+#
+#        labels = np.random.randint(k, size=n_samples)
+#        print(f'\nStarting kernel k-means clustering...k={k}')
+#        sys.stdout.flush()
+#        for _ in range(max_iter):
+#            start_time = time.time()
+#            distances = np.zeros((n_samples, k))
+#            for j in range(k):
+#                cluster_idx = np.where(labels == j)[0]
+#                if len(cluster_idx) == 0:
+#                    distances[:, j] = np.inf
+#                    continue
+#                
+#                K_ii = np.diag(K)  
+#                K_ic = np.mean(K[:, cluster_idx], axis=1)  # (n_samples,): promedio de k(x_i, x_l) con x_l en C_j
+#                K_cc = np.mean(K[np.ix_(cluster_idx, cluster_idx)])  # escalar: promedio de k(x_l, x_m) con l, m en C_j
+#
+#                distances[:, j] = K_ii - 2 * K_ic + K_cc
+#
+#            new_labels = np.argmin(distances, axis=1)
+#            
+#            if np.array_equal(new_labels, labels):
+#                break
+#            
+#            labels = new_labels
+#            elapsed_time = time.time() - start_time
+#            print(f"\rIteration {_ + 1} completed in {elapsed_time:.2f} seconds", end='')
+#            sys.stdout.flush()
+#        risk = 0.0
+#        for j in range(k):
+#            cluster_idx = np.where(labels == j)[0]
+#            if len(cluster_idx) == 0:
+#                continue
+#            K_diag_sum = np.sum(np.diag(K)[cluster_idx])
+#            K_cluster_sum = np.sum(K[np.ix_(cluster_idx, cluster_idx)])
+#            risk += K_diag_sum - (1.0 / len(cluster_idx)) * K_cluster_sum
+#
+#        risk_list.append(risk)
+#        centroids = np.array([S[labels == j].mean(axis=0) for j in range(k)])
+#        centroids_list.append(centroids)
+#        labels_list.append(labels)
+#
+#    return labels_list, centroids_list, K, risk_list
+
 def kernel_kmeans(S, ks, max_iter=100, kernel_func=None, initial_centroids_random=False, K_matrix=None):
     n_samples = S.shape[0]
-    np.random.seed(0)  # For reproducibility
+    np.random.seed(0)
+
+    # Compute full kernel matrix if not provided
     if K_matrix is None:
         print('Computing kernel matrix...')
         sys.stdout.flush()
         K = np.zeros((n_samples, n_samples))
         for i in range(n_samples):
             for j in range(i, n_samples):
-                print(f'\rProcessing kernel matrix: {i+1} of {n_samples}, {j+1} of {n_samples}', end='')
-                sys.stdout.flush()
                 K[i, j] = kernel_func(S[i], S[j])
                 K[j, i] = K[i, j]
     else:
         print('Kernel matrix was given!')
-        sys.stdout.flush()
-        K=K_matrix
+        K = K_matrix
+
     centroids_list = []
     labels_list = []
     risk_list = []
+
+    diag_K = np.diag(K)  # k(S_i, S_i) for all i (vector)
+
     for k in ks:
         if initial_centroids_random:
             centroids = np.random.rand(k, S.shape[1], S.shape[2])
+            for i in range(k):
+                centroids[i] = centroids[i] / np.sum(centroids[i])  
+            first_distances = np.zeros((n_samples, k))
+            for j in range(n_samples):
+                for l in range(k):
+                    first_distances[j, l] = -2*kernel_func(S[j], centroids[l]) + diag_K[j] + kernel_func(centroids[l], centroids[l])
+            labels = np.argmin(first_distances, axis=1)
+            print(f'\nInitial centroids randomly generated for k={k}')
+            sys.stdout.flush()
         else:
             indexes = np.random.choice(n_samples, k, replace=False)
             centroids = S[indexes]
+            first_distances = np.zeros((n_samples, k))
+            for j in range(n_samples):
+                for l in range(k):
+                    first_distances[j, l] = diag_K[j] + diag_K[indexes[l]] - 2 * K[j, indexes[l]]
+            labels = np.argmin(first_distances, axis=1)
+            print(f'\nInitial centroids selected from data for k={k}')
+            sys.stdout.flush()
 
-        labels = np.random.randint(k, size=n_samples)
+        #labels = np.random.randint(k, size=n_samples)
         print(f'\nStarting kernel k-means clustering...k={k}')
         sys.stdout.flush()
-        for _ in range(max_iter):
+
+        for iteration in range(max_iter):
             start_time = time.time()
             distances = np.zeros((n_samples, k))
+
             for j in range(k):
                 cluster_idx = np.where(labels == j)[0]
                 if len(cluster_idx) == 0:
                     distances[:, j] = np.inf
                     continue
-                
-                K_ii = np.diag(K)  
-                K_ic = np.mean(K[:, cluster_idx], axis=1)  # (n_samples,): promedio de k(x_i, x_l) con x_l en C_j
-                K_cc = np.mean(K[np.ix_(cluster_idx, cluster_idx)])  # escalar: promedio de k(x_l, x_m) con l, m en C_j
 
-                distances[:, j] = K_ii - 2 * K_ic + K_cc
+                K_ic = np.mean(K[:, cluster_idx], axis=1)  # (n_samples,) - mean over k(S_i, x) for x in cluster j
+                K_cc = np.mean(K[np.ix_(cluster_idx, cluster_idx)])  # scalar - mean over k(x, x') for x,x' in cluster j
+
+                distances[:, j] = diag_K - 2 * K_ic + K_cc  # vectorized distance for all i to cluster j
 
             new_labels = np.argmin(distances, axis=1)
-            
+
             if np.array_equal(new_labels, labels):
+                print(f"\rConverged at iteration {iteration+1}", end='')
+                sys.stdout.flush()
                 break
-            
+
             labels = new_labels
             elapsed_time = time.time() - start_time
-            print(f"\rIteration {_ + 1} completed in {elapsed_time:.2f} seconds", end='')
+            print(f"\rIteration {iteration + 1} completed in {elapsed_time:.2f} seconds", end='')
             sys.stdout.flush()
+
+        # Compute clustering risk (objective function value)
         risk = 0.0
         for j in range(k):
             cluster_idx = np.where(labels == j)[0]
             if len(cluster_idx) == 0:
                 continue
-            K_diag_sum = np.sum(np.diag(K)[cluster_idx])
+            K_diag_sum = np.sum(diag_K[cluster_idx])
             K_cluster_sum = np.sum(K[np.ix_(cluster_idx, cluster_idx)])
             risk += K_diag_sum - (1.0 / len(cluster_idx)) * K_cluster_sum
 
         risk_list.append(risk)
-        centroids = np.array([S[labels == j].mean(axis=0) for j in range(k)])
+
+        # Centroids as mean of input points (not used in kernel, just stored for convenience)
+        centroids = np.array([S[labels == j].mean(axis=0) if np.any(labels == j) else np.zeros_like(S[0]) for j in range(k)])
         centroids_list.append(centroids)
         labels_list.append(labels)
 
     return labels_list, centroids_list, K, risk_list
+
 
 ################################################################################
 # Silhouette Score
@@ -259,7 +355,7 @@ def kernel_silhouette_score(K, labels):
 ################################################################################
 
 if __name__ == "__main__":
-    # python3 spk_cluster.py -dir spk_kmeans -flows data_mibici_2018_4/flows.npy -sys mibici -ks '[2,3,4]' -m_it 100 -init 0 -Km spk_kmeans/kernel_matrix.npy
+    # python3 spk_cluster.py -dir spk_kmeans -flows data_mibici_2018_4/flows.npy -sys mibici -ks '[2,3,4]' -m_it 100 -Km spk_kmeans/kernel_matrix.npy
 
     parser = argparse.ArgumentParser(description="SP Kernel Clustering")
     parser.add_argument('-dir', '--directory', type=str, default=None, help='Directory to save results', required=False)
@@ -362,4 +458,4 @@ if __name__ == "__main__":
     print('Results saved in:', directory)
     sys.stdout.flush()
 
-    os.system(f'curl -d "Finishing kernel KMeans clustering with {system}" ntfy.sh/aamh_091099_ntfy')
+    #os.system(f'curl -d "Finishing kernel KMeans clustering with {system}" ntfy.sh/aamh_091099_ntfy')
