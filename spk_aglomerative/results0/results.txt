@@ -1,0 +1,4 @@
+Kernel matrix path: /Users/antoniomendez/Desktop/Tesis/thesis/spk_kmeans/test_2/kernel_matrix.npy 
+Dates path: /Users/antoniomendez/Desktop/Tesis/thesis/vector_files/2024_fss_jan_apr/dates.csv 
+Output directory: spk_aglomerative/results0 
+Clustering completed in: 0.003403902 seconds.

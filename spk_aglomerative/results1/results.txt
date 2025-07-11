@@ -1,0 +1,4 @@
+Kernel matrix path: /home/est_posgrado_angel.mendez/spk_kernel_kmeans/results_11/kernel_matrix.npy 
+Dates path: /home/est_posgrado_angel.mendez/gen_datasets/2024_dayweeks_jan_apr/dates.csv 
+Output directory: results1 
+Clustering completed in: 0.01532578 seconds.
