@@ -42,6 +42,7 @@ results_path <- file.path(output_dir, "results.txt")
 results <- file(results_path, open = "w")
 
 cat('Kernel matrix path:', kernel_path, '\n', file = results)
+cat('Dates path:', dates_path, '\n', file = results)
 cat('Output directory:', output_dir, '\n', file = results)
 
 ##############################################################
@@ -74,12 +75,14 @@ cat('Clustering completed in:', end_time - start_time, 'seconds.\n', file = resu
 # Save clustering results
 ##########################################################
 
-n <- nrow(K)
-for (k in 2:(n - 1)) {
+n_ <- nrow(K)
+for (k in 2:(n_ - 1)) {
   etiquetas <- cutree(hc, k = k)
   ruta_etiquetas <- file.path(output_dir, paste0("labels_k", k, ".npy"))
   npySave(ruta_etiquetas, etiquetas)
 }
+
+write.csv(dates, file = file.path(output_dir, "dates.csv"), row.names = FALSE)
 
 pdf(file = file.path(output_dir, "dendrogram.pdf"), width = 18, height = 12)
 
@@ -88,6 +91,32 @@ plot(dhc,
      xlab = "", sub = "",
      cex = 0.8)
 
+ks <- 2:(n_-1)
+n <- length(hc$order)
+heights_k <- hc$height[ (n - ks) ]
+
+for (h in heights_k) {
+  abline(h = h, col = "blue", lty = 3)
+}
+
+axis(side = 4, at = heights_k, labels = ks, las = 1, col.axis = "blue", cex.axis = 0.8)
+mtext("k", side = 4, line = 3, col = "blue", cex = 0.9)
+
+invisible(dev.off())
+
+pdf(file = file.path(output_dir, "hierarchical.pdf"), width = 18, height = 12)
+
+plot(hc,
+     main = "Aglomerative clustering",
+     xlab = "", sub = "",
+     cex = 0.8)
+
+for (h in heights_k) {
+  abline(h = h, col = "blue", lty = 3)
+}
+
+axis(side = 4, at = heights_k, labels = ks, las = 1, col.axis = "blue", cex.axis = 0.8)
+mtext("k", side = 4, line = 3, col = "blue", cex = 0.9)
 
 invisible(dev.off())
 
