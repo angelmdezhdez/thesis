@@ -1,0 +1,24 @@
+12 nodes, 3 atoms, no reg... Distance: 0.0885, Sparsity: 0.3292
+12 nodes, 3 atoms, reg... Distance: 0.0870, Sparsity: 0.4068
+12 nodes, 6 atoms, no reg... Distance: 0.2537, Sparsity: 0.3011
+12 nodes, 6 atoms, reg... Distance: 0.1278, Sparsity: 0.5218
+12 nodes, 9 atoms, no reg... Distance: 0.4637, Sparsity: 0.3781
+12 nodes, 9 atoms, reg... Distance: 0.1579, Sparsity: 0.5856
+12 nodes, 12 atoms, no reg... Distance: 0.1767, Sparsity: 0.3972
+12 nodes, 12 atoms, reg... Distance: 0.0751, Sparsity: 0.6084
+22 nodes, 6 atoms, no reg... Distance: 0.0273, Sparsity: 0.3917
+22 nodes, 6 atoms, reg... Distance: 0.0323, Sparsity: 0.4968
+22 nodes, 12 atoms, no reg... Distance: 0.0290, Sparsity: 0.4217
+22 nodes, 12 atoms, reg... Distance: 0.0259, Sparsity: 0.6457
+22 nodes, 18 atoms, no reg... Distance: 0.0280, Sparsity: 0.4651
+22 nodes, 18 atoms, reg... Distance: 0.0406, Sparsity: 0.6942
+22 nodes, 22 atoms, no reg... Distance: 0.1720, Sparsity: 0.5043
+22 nodes, 22 atoms, reg... Distance: 0.0222, Sparsity: 0.6637
+45 nodes, 11 atoms, no reg... Distance: 0.0043, Sparsity: 0.4630
+45 nodes, 11 atoms, reg... Distance: 0.0052, Sparsity: 0.6733
+45 nodes, 22 atoms, no reg... Distance: 0.0025, Sparsity: 0.5214
+45 nodes, 22 atoms, reg... Distance: 0.0025, Sparsity: 0.7250
+45 nodes, 34 atoms, no reg... Distance: 0.0029, Sparsity: 0.5803
+45 nodes, 34 atoms, reg... Distance: 0.0025, Sparsity: 0.7889
+45 nodes, 45 atoms, no reg... Distance: 0.0020, Sparsity: 0.6152
+45 nodes, 45 atoms, reg... Distance: 0.0018, Sparsity: 0.8138
