@@ -1,0 +1,21 @@
+system: mibici_22nodes_natoms22_ep3500_as40_ds25_regl1_smooth1_lambda0.0_gamma0.0
+number of nodes: 22
+flows: /home/est_posgrado_angel.mendez/gen_datasets/ecobici_flows_dataset_4_split80/flows_train.npy
+laplacian: /home/est_posgrado_angel.mendez/gen_datasets/ecobici_flows_dataset_4_split80/laplacian.npy
+number of atoms: 22
+total epochs: 3500
+number epochs that was required: 3500
+regularization: l1
+lambda: 0.0
+smoothness: True
+gamma: 0.0
+alpha steps: 40
+dictionary steps: 25
+learning rate: 5e-05
+batch size: 73
+final loss: 3.5955662269770983e-07
+best loss: 3.5919401852879673e-07
+final time: 286.12 minutes
+mean time per epoch: 4.90 seconds
+tolerance: 1e-05
+patience: 200

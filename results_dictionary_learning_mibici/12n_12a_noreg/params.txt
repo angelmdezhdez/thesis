@@ -1,0 +1,21 @@
+system: ecobici_experiment_48
+number of nodes: 12
+flows: /home/est_posgrado_axel.leon/dictionaries_mibici_12nodes/mibici_flows_dataset_4_split80/flows_train.npy
+laplacian: /home/est_posgrado_axel.leon/dictionaries_mibici_12nodes/mibici_flows_dataset_4_split80/laplacian.npy
+number of atoms: 12
+total epochs: 3500
+number epochs that was required: 3500
+regularization: l1
+lambda: 0.0
+smoothness: True
+gamma: 0.0
+alpha steps: 40
+dictionary steps: 25
+learning rate: 5e-05
+batch size: 73
+final loss: 2.523453304092982e-06
+best loss: 2.523453304092982e-06
+final time: 83.31 minutes
+mean time per epoch: 1.43 seconds
+tolerance: 1e-05
+patience: 200
