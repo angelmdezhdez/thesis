@@ -37,21 +37,21 @@ if __name__ == "__main__":
     #print(f'Mean distance: {mean_distance(flows, laplacian):.4f}')
     #print(f'Mean sparsity: {mean_sparsity(flows):.4f}')
 
-    n_nodes = [15, 22, 46]
+    n_nodes = [12, 22, 45]
     n_atoms = [
-        [4, 7, 11, 15],
+        [3, 6, 9, 12],
         [6, 12, 18, 22],
-        [12, 23, 38, 46]
+        [11, 22, 34, 45]
     ]
 
-    file_metrics = "metrics_eco.txt"
+    file_metrics = "metrics_dist_mibici.txt"
     with open(file_metrics, "w") as f:
         for i, n_node in enumerate(n_nodes):
-            laplacian = np.load(f"results_dictionary_learning_eco/laplacian_{n_node}.npy")
+            laplacian = np.load(f"results_dictionary_learning_mibici/laplacian_{n_node}.npy")
             for j in range(4):
                 n_atom = n_atoms[i][j]
-                weights_noreg = np.load(f"results_dictionary_learning_eco/{n_node}n_{n_atom}a_noreg/weights.npy")
-                weights_reg = np.load(f"results_dictionary_learning_eco/{n_node}n_{n_atom}a_reg/weights.npy")
+                weights_reg = np.load(f"results_dict_dist_learning_mibici/{n_node}n_{n_atom}a_noreg/weights.npy")
+                weights_noreg = np.load(f"results_dict_dist_learning_mibici/{n_node}n_{n_atom}a_reg/weights.npy")
                 f.write(f"{n_node} nodes, {n_atom} atoms, no reg... values: & {mean_distance(weights_noreg, laplacian):.4f}        & {mean_sparsity(weights_noreg):.4f}           & {mean_distance(weights_reg, laplacian):.4f}        & {mean_sparsity(weights_reg):.4f}\n")
 
     print(f"Metrics written to {file_metrics}")
