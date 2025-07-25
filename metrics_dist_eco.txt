@@ -1,0 +1,12 @@
+15 nodes, 4 atoms, no reg... values: & 2.8813        & 0.0000           & 2.8663        & 0.0000
+15 nodes, 7 atoms, no reg... values: & 2.9003        & 0.0000           & 2.9011        & 0.0000
+15 nodes, 11 atoms, no reg... values: & 2.2239        & 0.0000           & 1.6671        & 0.0000
+15 nodes, 15 atoms, no reg... values: & 2.6859        & 0.0000           & 1.6209        & 0.0000
+22 nodes, 6 atoms, no reg... values: & 4.0029        & 0.0000           & 4.0004        & 0.0000
+22 nodes, 12 atoms, no reg... values: & 2.3895        & 0.0000           & 2.4475        & 0.0000
+22 nodes, 18 atoms, no reg... values: & 1.8762        & 0.0000           & 1.7724        & 0.0000
+22 nodes, 22 atoms, no reg... values: & 1.8347        & 0.0000           & 1.7223        & 0.0000
+46 nodes, 12 atoms, no reg... values: & 4.4563        & 0.0000           & 4.4556        & 0.0000
+46 nodes, 23 atoms, no reg... values: & 2.5214        & 0.0000           & 2.5202        & 0.0000
+46 nodes, 38 atoms, no reg... values: & 1.9307        & 0.0000           & 1.9088        & 0.0000
+46 nodes, 46 atoms, no reg... values: & 2.0972        & 0.0000           & 2.0749        & 0.0000
