@@ -1,41 +1,40 @@
 import subprocess
 from itertools import product
 import os
+import time
+
+start = time.time()
 
 # Parámetros a variar
-natoms_list = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40]
-lambda_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-gamma_list = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
-smooth_list = [0, 1]
+dim_list = [19, 38, 57, 77]
+regs_list = ['reg', 'noreg']
+input_list = [f'/Users/antoniomendez/Desktop/Tesis/thesis/results_dictionary_learning_mibici/77n_{i}a_{j}' for i in dim_list for j in regs_list]
+
+
 
 # Parámetros fijos
 base_command = [
-    "python3", "dict_arr_learning.py",
-    "-system", "experiment",
-    "-flows", "synthetic_data/flows.npy",
-    "-lap", "synthetic_data/laplacian.npy",
-    "-ep", "10",
-    "-reg", "l2",
-    "-as", "100",
-    "-ds", "100",
-    "-lr", "1e-2",
-    "-bs", "32"
+    "python3", "kmeans_learned_nodes.py",
+    "-int", "[2,26]",
+    "-st", "/Users/antoniomendez/Desktop/Tesis/Datos/Adj_mibici/matrices_estaciones/est_2024.npy",
+    "-cell", "/Users/antoniomendez/Desktop/Tesis/thesis/station_cells/station_cells_mibici_2024_12.pkl",
+    "-nodes", "/Users/antoniomendez/Desktop/Tesis/thesis/station_cells/nodes_mibici_12.npy",
+    "-index", "12",
+    '-sys', 'mibici',
+    "-part", "12"
 ]
 
 # Ejecutar combinaciones
-for natoms, lam, gamma, smooth in product(natoms_list, lambda_list, gamma_list, smooth_list):
+for dim, reg, inp in product(dim_list, regs_list, input_list):
     cmd = base_command + [
-        '-system', f'_{natoms}_{lam}_{gamma}_{smooth}',
-        "-natoms", str(natoms),
-        "-lambda", str(lam),
-        "-gamma", str(gamma),
-        '-smooth', str(smooth)
+        "-input", inp,
+        "-out", f"results_kmeans_nodes/mibici_test_kmeans_77_{dim}_{reg}"
     ]
     print("Ejecutando:", " ".join(cmd))
     subprocess.run(cmd)
 
-mensaje = "Terminé"
-canal = "My_Computer"
+mensaje = f"Terminé en {(time.time() - start)/60:.2f} minutos"
+canal = "aamh_091099_ntfy"
 
 comando = f'curl -d "{mensaje}" ntfy.sh/{canal}'
 os.system(comando)
