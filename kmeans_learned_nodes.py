@@ -1,19 +1,34 @@
+# python3 kmeans_learned_nodes.py -sys ecobici -part 6 -input /Users/antoniomendez/Desktop/Tesis/thesis/results_dictionary_learning_eco/46n_12a_noreg -st /Users/antoniomendez/Desktop/Tesis/Datos/Adj_eco/matrices_estaciones/est_2024.npy -cell /Users/antoniomendez/Desktop/Tesis/thesis/station_cells/station_cells_ecobici_2024_6.pkl -nodes /Users/antoniomendez/Desktop/Tesis/thesis/station_cells/nodes_eco_6.npy -index 10 -int '[2,5]' -out test_kmeans1
+
 import argparse
 import os
+import pickle
 import numpy as np
+import folium
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import abstract_flows.flows as flows
+import abstract_flows.arrow as arrow
+import abstract_flows.grid as grid
+
 
 parser = argparse.ArgumentParser(description='KMeans Clustering with Learned Nodes')
+parser.add_argument('-sys', '--system', type=str, required=True, help='System type (e.g., ecobici, mibici)')
+parser.add_argument('-part', '--partition', type=int, required=True, help='Partition type (e.g., 1, 2, 3)')
 parser.add_argument('-input', '--input_dir', type=str, required=True, help='Directory containing the data files')
+parser.add_argument('-st', '--stations_location', type=str, required=True, help='Path to the stations location file')
+parser.add_argument('-cell', '--cell_info', type=str, required=True, help='Path to the cell information file')
+parser.add_argument('-nodes', '--nodes_used', type=str, required=True, help='Path to the nodes used file')
 parser.add_argument('-index', '--flow_index', type=int, required=True, help='Index of the flow to process')
 parser.add_argument('-int', '--interval', type=str, required=True, help='Interval for number of clusters')
 parser.add_argument('-out', '--output_dir', type=str, required=True, help='Directory to save the output files')
 
 args = parser.parse_args()
 
-weight = np.load(args.input_dir)
+weight = np.load(args.input_dir + '/weights.npy', allow_pickle=True)
 index = args.flow_index
+nodes = np.load(args.nodes_used, allow_pickle=True)
 interval = args.interval
 ints = [int(x) for x in interval[1:-1].split(',')]
 interval = [i for i in range(ints[0], ints[1] + 1)]
@@ -33,7 +48,52 @@ for num_clusters in interval:
     labels = kmeans.labels_
     inertias.append(kmeans.inertia_)
 
-    # Save the labels and cluster centers
+    if args.system == 'ecobici':
+        grid_ = grid.Grid(int(1.8*args.partition), args.partition, 'ecobici')
+    elif args.system == 'mibici':
+        grid_ = grid.Grid(args.partition, args.partition, 'mibici')
+
+    with open(args.cell_info, 'rb') as f:
+        cell_info = pickle.load(f)
+    
+    stations = np.load(args.stations_location, allow_pickle=True)
+    map_ = grid_.map_around()
+
+    # Usamos colores distintivos según el número máximo de clusters
+    color_palette = list(mcolors.TABLEAU_COLORS.values()) + list(mcolors.CSS4_COLORS.values())
+    colors = {i: color_palette[i % len(color_palette)] for i in range(len(set(labels)))}
+
+    # Convertimos nodes en diccionario para búsqueda rápida
+    nodes_dict = {tuple(cell): idx for idx, cell in enumerate(nodes)}
+
+    for station in stations:
+        station_id = station[0]
+        lat = station[1]
+        lon = station[2]
+
+        cell = cell_info.get(station_id)
+        if cell is None:
+            continue
+
+        node_index = nodes_dict.get(tuple(cell))
+        if node_index is None or node_index >= len(labels):
+            continue
+
+        cluster_label = labels[node_index]
+        cluster_color = colors[cluster_label]
+
+        folium.CircleMarker(
+            location=[lat, lon],
+            radius=3,
+            color=cluster_color,
+            fill=True,
+            fill_color=cluster_color,
+            fill_opacity=0.5,
+            popup=f"Station ID: {station_id}\nCluster: {cluster_label}"
+        ).add_to(map_)
+
+    map_.save(f"{output_dir}/map_{num_clusters}.html")
+
     np.save(f"{output_dir}/labels_{num_clusters}.npy", labels)
     np.save(f"{output_dir}/centers_{num_clusters}.npy", kmeans.cluster_centers_)
 
