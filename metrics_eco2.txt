@@ -1,0 +1,8 @@
+80 nodes, 20 atoms, no reg... values: & 0.0112        & 0.4698           & 0.0086        & 0.6446
+80 nodes, 40 atoms, no reg... values: & 0.0115        & 0.5273           & 0.0079        & 0.7325
+80 nodes, 60 atoms, no reg... values: & 0.0113        & 0.6201           & 0.0063        & 0.7724
+80 nodes, 80 atoms, no reg... values: & 0.0108        & 0.6654           & 0.0069        & 0.8241
+123 nodes, 30 atoms, no reg... values: & 0.0113        & 0.5737           & 0.0113        & 0.5770
+123 nodes, 60 atoms, no reg... values: & 0.0115        & 0.6288           & 0.0106        & 0.7428
+123 nodes, 90 atoms, no reg... values: & 0.0113        & 0.7136           & 0.0078        & 0.7858
+123 nodes, 123 atoms, no reg... values: & 0.0103        & 0.7478           & 0.0084        & 0.8130
