@@ -2,6 +2,7 @@
 *.DS_Store
 *.Rhistory
 *.html
+**/weights.npy
 .CFUserTextEncoding
 .anydesk/
 .config/
