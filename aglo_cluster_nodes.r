@@ -2,7 +2,7 @@
 #Libraries
 #########################################################################
 
-# Rscript aglo_cluster_nodes.r -nodes path/to/nodes.npy -i index -odir output_directory
+# Rscript aglo_cluster_nodes.r -nodes path/to/nodes.npy -odir output_directory
 
 options(warn = -1)
 library(argparse)
@@ -35,8 +35,15 @@ if (!dir.exists(output_dir)) {
 
 flow_weight <- npyLoad(nodes_path)
 
-flow_weight <- as.matrix(flow_weight)
+cat('Matriz original\n')
+cat(flow_weight)
+cat('\n\n')
+
+#flow_weight <- as.matrix(flow_weight)
 flow_weight <- t(flow_weight)
+
+cat('Matriz transpuesta\n')
+cat(flow_weight)
 
 #flow_weight <- flow_weight[, apply(flow_weight, 2, function(col) all(is.finite(col))), drop = FALSE]
 #
@@ -48,6 +55,8 @@ flow_weight <- t(flow_weight)
 #print(dim(flow_weight))
 
 distance_matrix <- dist(flow_weight, method = "euclidean")
+saveRDS(distance_matrix, file = file.path(output_dir, "distance_matrix.rds"))
+
 
 hc <- hclust(distance_matrix, method = "complete")
 dhc <- as.dendrogram(hc)

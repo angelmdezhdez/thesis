@@ -11,6 +11,43 @@ import matplotlib.colors as mcolors
 import abstract_flows.flows as flows
 import abstract_flows.arrow as arrow
 import abstract_flows.grid as grid
+from sklearn.metrics import silhouette_samples, silhouette_score
+
+
+def plot_silhouette(x, y, dir=None):
+    sample_silhouette_values = silhouette_samples(x, y)
+    silhouette_avg = silhouette_score(x, y)
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    y_lower = 10
+    n_clusters = len(np.unique(y))
+
+    for i in range(n_clusters):
+        # Valores silhouette de las muestras en el clúster i
+        ith_cluster_silhouette_values = sample_silhouette_values[y == i]
+        ith_cluster_silhouette_values.sort()
+
+        size_cluster_i = ith_cluster_silhouette_values.shape[0]
+        y_upper = y_lower + size_cluster_i
+
+        color = plt.cm.nipy_spectral(float(i) / n_clusters)
+        ax.fill_betweenx(np.arange(y_lower, y_upper),
+                        0, ith_cluster_silhouette_values,
+                        facecolor=color, edgecolor=color, alpha=0.7)
+
+        ax.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
+
+        y_lower = y_upper + 10  # espacio entre clústeres
+
+    ax.axvline(x=silhouette_avg, color="red", linestyle="--")
+
+    ax.set_xlabel("Coeficiente silhouette")
+    ax.set_ylabel("Muestras")
+    ax.set_title(f"Silhouette plot para {n_clusters} clusters - Promedio: {silhouette_avg:.3f}")
+    ax.set_yticks([])
+    ax.set_xlim([-0.1, 1])
+    plt.savefig(f"{dir}/silhouette_{n_clusters}.png")
+    plt.close()
 
 
 parser = argparse.ArgumentParser(description='KMeans Clustering with Learned Nodes')
@@ -36,6 +73,22 @@ output_dir = args.output_dir
 
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
+
+labels_dir = f"{output_dir}/labels"
+if not os.path.exists(labels_dir):
+    os.makedirs(labels_dir)
+
+centers_dir = f"{output_dir}/centers"
+if not os.path.exists(centers_dir):
+    os.makedirs(centers_dir)
+
+maps_dir = f"{output_dir}/maps"
+if not os.path.exists(maps_dir):
+    os.makedirs(maps_dir)
+
+silhouettes_dir = f"{output_dir}/silhouettes"
+if not os.path.exists(silhouettes_dir):
+    os.makedirs(silhouettes_dir)
 
 weight = weight[index]
 
@@ -92,10 +145,11 @@ for num_clusters in interval:
             popup=f"Station ID: {station_id}\nCluster: {cluster_label}"
         ).add_to(map_)
 
-    map_.save(f"{output_dir}/map_{num_clusters}.html")
+    map_.save(f"{output_dir}/maps/map_{num_clusters}.html")
 
-    np.save(f"{output_dir}/labels_{num_clusters}.npy", labels)
-    np.save(f"{output_dir}/centers_{num_clusters}.npy", kmeans.cluster_centers_)
+    np.save(f"{output_dir}/labels/labels_{num_clusters}.npy", labels)
+    np.save(f"{output_dir}/centers/centers_{num_clusters}.npy", kmeans.cluster_centers_)
+    plot_silhouette(weight, labels, dir=silhouettes_dir)
 
 # Plotting the inertia
 plt.figure(figsize=(10, 6))
