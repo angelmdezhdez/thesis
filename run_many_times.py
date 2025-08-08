@@ -15,7 +15,7 @@ input_list = [
 
 # Parámetros fijos
 base_command = [
-    "python3", "aglo_learned_nodes.py",
+    "python3", "kmeans_learned_nodes.py",
     "-int", f"[2,{int(dim_list[-1]/2)}]",
     "-st", "/Users/antoniomendez/Desktop/Tesis/Datos/Adj_eco/matrices_estaciones/est_2024.npy",
     "-cell", "/Users/antoniomendez/Desktop/Tesis/thesis/station_cells/station_cells_ecobici_2024_6.pkl",
@@ -31,7 +31,7 @@ for inp in input_list:
     folder_name = osp.basename(inp)
 
     # Crear nombre de carpeta de salida usando el identificador del input
-    output_folder = f"results_aglo_nodes/{folder_name}"
+    output_folder = f"results_kmeans_nodes/{folder_name}"
 
     cmd = base_command + [
         "-input", inp,

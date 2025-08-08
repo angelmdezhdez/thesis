@@ -36,7 +36,7 @@ def plot_silhouette(x, y, dir=None):
                         0, ith_cluster_silhouette_values,
                         facecolor=color, edgecolor=color, alpha=0.7)
 
-        ax.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
+        ax.text(-0.07, y_lower + 0.5 * size_cluster_i, str(i))
 
         y_lower = y_upper + 10  # espacio entre clústeres
 
