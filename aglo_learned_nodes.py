@@ -112,7 +112,7 @@ weight = np.transpose(weight)
 
 for num_clusters in interval:
 
-    labels = AgglomerativeClustering(n_clusters=num_clusters, linkage='complete').fit_predict(weight)
+    labels = AgglomerativeClustering(n_clusters=num_clusters, linkage='ward').fit_predict(weight)
 
     if args.system == 'ecobici':
         grid_ = grid.Grid(int(1.8*args.partition), args.partition, 'ecobici')
@@ -165,6 +165,6 @@ for num_clusters in interval:
 
     # Dendrogram
 Z = linkage(weight, method='ward')
-plot_dendro_with_cutlines(Z, title=f"Dendrogram for {num_clusters} Clusters", dir=output_dir)
+plot_dendro_with_cutlines(Z, title=f"Dendrogram", dir=output_dir)
 
 print(f"Clustering completed. Results saved in {output_dir}.")
