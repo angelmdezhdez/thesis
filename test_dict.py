@@ -146,7 +146,7 @@ def test_dictionary_learning(flow_file, dictionary_file, lambda_reg=0.01, alpha_
     return best_alpha, loss_vector
 
 if __name__ == '__main__':
-    # python3 test_dict.py -dir None -system little_experiment -flows synthetic_data/flows.npy -dict synthetic_data/dictionary.npy -reg l1 -lambda 0.001 -as 25 -lr 1e-4 -bs 4
+    # python3 test_dict.py -dir None -system little_experiment -flows synthetic_data/flows.npy -dict synthetic_data/dictionary.npy -reg l1 -lambda 0.001 -as (as*epochs) -lr 1e-4 -bs 4
 
     parser = argparse.ArgumentParser(description='Dictionary Learning for Arrival Flows')
     parser.add_argument('-dir', '--directory', type=str, default=None, help='Directory to save results', required=False)
