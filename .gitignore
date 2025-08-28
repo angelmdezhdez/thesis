@@ -3,6 +3,7 @@
 *.Rhistory
 *.html
 **/weights.npy
+**/weights_test.npy
 .CFUserTextEncoding
 .anydesk/
 .config/
