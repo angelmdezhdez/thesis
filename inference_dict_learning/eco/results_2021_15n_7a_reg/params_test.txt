@@ -1,0 +1,10 @@
+system: 2021_15n_7a_reg
+flows: /home/est_posgrado_angel.mendez/gen_datasets/ecobici_flows_dataset_3_split80/flows_2021.npy
+number epochs that was required: 1
+regularization: l1
+lambda: 2e-05
+alpha steps: 140000
+learning rate: 5e-05
+batch size: 30
+Mean loss: 0.004
+final time: 18.25 minutes
