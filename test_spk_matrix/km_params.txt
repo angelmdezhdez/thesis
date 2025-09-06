@@ -1,0 +1,6 @@
+system: mibici
+flows dir: vector_files/flows_mibici_2024.npy
+sigma: 0.9
+indexes: [244, 247, 251, 254, 258, 261, 265, 268]
+time: 2.36 minutes
+normalized: False
