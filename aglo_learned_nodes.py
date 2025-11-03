@@ -6,6 +6,7 @@ import pickle
 import numpy as np
 import folium
 import matplotlib.pyplot as plt
+plt.rcParams['figure.dpi'] = 200
 import matplotlib.colors as mcolors
 import abstract_flows.flows as flows
 import abstract_flows.arrow as arrow
@@ -47,7 +48,7 @@ def plot_silhouette(x, y, dir=None):
     ax.set_title(f"Silhouette plot para {n_clusters} clusters - Promedio: {silhouette_avg:.3f}")
     ax.set_yticks([])
     ax.set_xlim([-0.1, 1])
-    plt.savefig(f"{dir}/silhouette_{n_clusters}.png")
+    plt.savefig(f"{dir}/silhouette_{n_clusters}.pdf", bbox_inches='tight')
     plt.close()
 
 def plot_dendro_with_cutlines(Z, title, dir=None):
@@ -66,7 +67,7 @@ def plot_dendro_with_cutlines(Z, title, dir=None):
 
     plt.tight_layout()
 
-    plt.savefig(f"{dir}/dendrogram.png")
+    plt.savefig(f"{dir}/dendrogram.pdf", bbox_inches='tight')
     plt.close()
 
 parser = argparse.ArgumentParser(description='Aglomerative Clustering with Learned Nodes')
@@ -82,7 +83,7 @@ parser.add_argument('-out', '--output_dir', type=str, required=True, help='Direc
 
 args = parser.parse_args()
 
-weight = np.load(args.input_dir + '/weights.npy', allow_pickle=True)
+weight = np.load(args.input_dir + '/weights_test.npy', allow_pickle=True)
 index = args.flow_index
 nodes = np.load(args.nodes_used, allow_pickle=True)
 interval = args.interval
